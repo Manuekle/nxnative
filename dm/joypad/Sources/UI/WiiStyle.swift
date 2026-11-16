@@ -1,6 +1,10 @@
 import CoreText
 import SwiftUI
+#if os(macOS)
+import AppKit
+#else
 import UIKit
+#endif
 
 /// The Wii Menu's look: a pearl background with fine grey stripes, white "channels" with soft grey borders,
 /// glossy pill buttons with a sky-blue rim, and sky blue (#34BEED) for whatever is selected.
@@ -51,7 +55,11 @@ enum AppFont {
     static func registerBundled() {
         let urls = ["otf", "ttf"].flatMap { Bundle.main.urls(forResourcesWithExtension: $0, subdirectory: nil) ?? [] }
         for url in urls { CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil) }
+#if os(macOS)
+        hasRodin = NSFont(name: rodin, size: 12) != nil
+#else
         hasRodin = UIFont(name: rodin, size: 12) != nil
+#endif
     }
 
     /// Titles, buttons and key labels.
@@ -206,5 +214,15 @@ struct WiiIconBadge: View {
             .background(Circle().fill(Wii.primaryFill))
             .overlay(Circle().strokeBorder(Wii.primaryRim, lineWidth: 1.5))
             .shadow(color: Wii.blueDark.opacity(0.3), radius: 3, y: 2)
+    }
+}
+
+extension Color {
+    init(hex: UInt32) {
+        self.init(.sRGB,
+                  red: Double((hex >> 16) & 0xFF) / 255,
+                  green: Double((hex >> 8) & 0xFF) / 255,
+                  blue: Double(hex & 0xFF) / 255,
+                  opacity: 1)
     }
 }
