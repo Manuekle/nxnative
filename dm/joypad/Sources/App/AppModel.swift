@@ -253,6 +253,11 @@ final class AppModel {
         pairingFor = nil
     }
 
+    /// Takes a closed game off the list of games played before.
+    func forgetGame(_ gameID: String, on macID: UInt64) {
+        store.removeGame(gameID, on: macID)
+    }
+
     func forgetMac(_ id: UInt64) {
         store.forget(id)
         for s in sessions where s.macID == id { endSession(s.id, notice: nil) }

@@ -87,6 +87,13 @@ final class PairStore {
         save()
     }
 
+    /// A game taken off the list of games played before. It comes back by itself if it opens again on that Mac.
+    func removeGame(_ gameID: String, on macID: UInt64) {
+        guard let i = macs.firstIndex(where: { $0.id == macID }) else { return }
+        macs[i].games.removeAll { $0.id == gameID }
+        save()
+    }
+
     func mode(gameID: String, on macID: UInt64) -> PadMode? {
         mac(macID)?.games.first { $0.id == gameID }?.mode.flatMap(PadMode.init(rawValue:))
     }

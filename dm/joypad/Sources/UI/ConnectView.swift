@@ -111,7 +111,22 @@ struct ConnectView: View {
                         waitingRow(problem: browser.problem)
                     }
                     ForEach(closed, id: \.1.id) { mac, game in
-                        ClosedGameChannel(title: game.title, mac: mac.name)
+                        ClosedGameChannel(title: game.title, mac: mac.name) {
+                            withAnimation(.easeOut(duration: 0.2)) { model.forgetGame(game.id, on: mac.id) }
+                        }
+                    }
+                    if closed.count > 1 {
+                        Button {
+                            withAnimation(.easeOut(duration: 0.2)) {
+                                for (mac, game) in closed { model.forgetGame(game.id, on: mac.id) }
+                            }
+                        } label: {
+                            Label("Clear closed games", systemImage: "trash")
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(Wii.blueText)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(.top, 2)
                     }
                 }
                 .padding(6)
@@ -297,6 +312,8 @@ private struct HostChannel: View {
 private struct ClosedGameChannel: View {
     let title: String
     let mac: String
+    /// Takes the game off the list: a game played before is only a memory, and a game that opens again is back.
+    let onRemove: () -> Void
 
     var body: some View {
         HStack(spacing: 14) {
@@ -317,11 +334,24 @@ private struct ClosedGameChannel: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 0)
+            Button(action: onRemove) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(Wii.muted)
+                    .frame(width: 34, height: 34)
+                    .background(Circle().fill(Wii.panel2))
+                    .overlay(Circle().strokeBorder(Wii.line, lineWidth: 1.5))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text("Remove \(title)"))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .opacity(0.85)
         .wiiChannel()
+        .contextMenu {
+            Button(role: .destructive, action: onRemove) { Label("Remove", systemImage: "trash") }
+        }
     }
 }
 

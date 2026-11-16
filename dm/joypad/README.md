@@ -61,7 +61,7 @@ The code is used once, and changes after five wrong tries and every 10 minutes; 
 
 ## Play
 
-- From then on a paired Mac's game joins by itself: one that opens while NX Pad shows its games screen takes the phone to the controller. The games screen lists the open games and, greyed, the ones played before on the paired Macs. **Back to games** (in the menu) lets every game go; each joins again once it closes and opens again. Settings > **Join open games by themselves** turns this off: a game is then joined with a tap.
+- From then on a paired Mac's game joins by itself: one that opens while NX Pad shows its games screen takes the phone to the controller. The games screen lists the open games and, greyed, the ones played before on the paired Macs. Each greyed one has an ✕ (or a long press, Remove) that takes it off the list, and **Clear closed games** takes them all; a game that opens again is back. **Back to games** (in the menu) lets every game go; each joins again once it closes and opens again. Settings > **Join open games by themselves** turns this off: a game is then joined with a tap.
 - How the phone is held, on the games screen or in the menu:
   - **Pair**: the left Joy-Con on the left half of the screen (stick, direction buttons, −, Capture, L and ZL at the top), the right one on the right half (A B X Y, stick, +, Home, R and ZR). The player lights, the game and the latency sit between them.
   - **Left Joy-Con** or **Right Joy-Con**: one Joy-Con held sideways across the screen, rail at the top with SL and SR, stick on the left. The game sees a single Joy-Con, as a real one held sideways; a game that only knows whole controllers reads it the way the host reads a sideways Joy-Con.
