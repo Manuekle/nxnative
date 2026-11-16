@@ -77,6 +77,8 @@ python3 -m pip install lz4 "capstone>=5,<6" fonttools nsz zbic "backports.zstd; 
 
 **3. Build**, with your game folder and your `prod.keys`:
 
+On a Mac, [NX Packer](dm/mac/packer/README.md) lets you choose the game, keys and output in a window. It uses the same builder as the command below.
+
 ```
 python3 scripts/build_ipa_from_nsp.py ~/Games/MarioWonder -k ~/keys/prod.keys
 ```

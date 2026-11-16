@@ -1,0 +1,26 @@
+name: NX Packer
+options:
+  deploymentTarget:
+    macOS: "26.6"
+  developmentLanguage: en
+targets:
+  NX Packer:
+    type: application
+    platform: macOS
+    sources:
+      - Sources
+      - ../../joypad/Sources/UI/WiiStyle.swift
+      - ../../joypad/Resources/AppIcon.icon
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: org.nxnative.packer
+        GENERATE_INFOPLIST_FILE: YES
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: "0.1.0"
+        SWIFT_VERSION: "5.0"
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: "-"
+    scheme:
+      run:
+        config: Debug
