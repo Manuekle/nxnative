@@ -304,6 +304,7 @@ final class TouchSurfaceView: UIView {
             out[side] = stick
             buttons.formUnion(pressed)
         }
+        if let shift = layout.shift { buttons = shift.apply(buttons) }
         buttons = ButtonMath.withCombos(buttons, layout.combos)
         let held = buttons
         // Turbo beats only while something it holds is down: a timer republishes until then

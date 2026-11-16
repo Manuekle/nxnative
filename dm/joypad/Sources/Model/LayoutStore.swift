@@ -38,29 +38,123 @@ struct StickRule: Codable, Hashable {
     var right: PadButton?
     /// The tilt stays when the thumb lifts, until the stick is tapped.
     var locksTilt = false
+    /// Only the way the stick is tilted most counts for the buttons: four directions, no diagonals.
+    var snapFour = false
+    /// How far the stick goes before a direction presses its button, as a fraction of full tilt.
+    var threshold = 0.45
+    /// A button pressed at full tilt, whatever else the stick does (a sprint that comes with pushing all the way).
+    var edge: PadButton?
 
-    /// How far the stick goes before a direction presses its button.
-    static let threshold: CGFloat = 0.45
+    static let thresholdRange = 0.2...0.9
+
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        axis = try c.decodeIfPresent(Axis.self, forKey: .axis) ?? .both
+        up = try c.decodeIfPresent(PadButton.self, forKey: .up)
+        down = try c.decodeIfPresent(PadButton.self, forKey: .down)
+        left = try c.decodeIfPresent(PadButton.self, forKey: .left)
+        right = try c.decodeIfPresent(PadButton.self, forKey: .right)
+        locksTilt = try c.decodeIfPresent(Bool.self, forKey: .locksTilt) ?? false
+        snapFour = try c.decodeIfPresent(Bool.self, forKey: .snapFour) ?? false
+        threshold = try c.decodeIfPresent(Double.self, forKey: .threshold) ?? 0.45
+        edge = try c.decodeIfPresent(PadButton.self, forKey: .edge)
+    }
+
+    /// The four directions made direction buttons, as a stick that stands in for the direction pad.
+    static var directionButtons: StickRule {
+        var r = StickRule()
+        r.up = .up
+        r.down = .down
+        r.left = .left
+        r.right = .right
+        return r
+    }
 
     var isDefault: Bool { self == StickRule() }
 
-    var mapsButtons: Bool { up != nil || down != nil || left != nil || right != nil }
+    var mapsButtons: Bool { up != nil || down != nil || left != nil || right != nil || edge != nil }
 
     /// What the stick reports for a tilt, and the buttons its directions hold. y is up.
     func apply(_ v: CGVector) -> (stick: CGVector, buttons: Set<PadButton>) {
         var out = v
         var pressed = Set<PadButton>()
-        let t = Self.threshold
-        if let b = up { if v.dy > t { pressed.insert(b) }; out.dy = min(out.dy, 0) }
-        if let b = down { if v.dy < -t { pressed.insert(b) }; out.dy = max(out.dy, 0) }
-        if let b = right { if v.dx > t { pressed.insert(b) }; out.dx = min(out.dx, 0) }
-        if let b = left { if v.dx < -t { pressed.insert(b) }; out.dx = max(out.dx, 0) }
+        let t = CGFloat(min(max(threshold, 0.05), 0.95))
+        let vertical = !snapFour || abs(v.dy) > abs(v.dx)
+        let horizontal = !snapFour || abs(v.dx) >= abs(v.dy)
+        if let b = up { if vertical, v.dy > t { pressed.insert(b) }; out.dy = min(out.dy, 0) }
+        if let b = down { if vertical, v.dy < -t { pressed.insert(b) }; out.dy = max(out.dy, 0) }
+        if let b = right { if horizontal, v.dx > t { pressed.insert(b) }; out.dx = min(out.dx, 0) }
+        if let b = left { if horizontal, v.dx < -t { pressed.insert(b) }; out.dx = max(out.dx, 0) }
+        if let b = edge, hypot(v.dx, v.dy) > 0.95 { pressed.insert(b) }
         switch axis {
         case .both: break
         case .horizontal: out.dy = 0
         case .vertical: out.dx = 0
         }
         return (out, pressed)
+    }
+}
+
+/// A shift key: while it is held (or locked, the lock being the button's own), the other buttons become others, or nothing, so one
+/// pad holds two sets of controls, such as driving and walking.
+struct ShiftSpec: Codable, Hashable {
+    var button: PadButton
+    /// The shift key itself still reaches the game.
+    var sendsButton = false
+    /// For a button (by PadButton.rawValue), the button it becomes while shifted.
+    var remap: [String: PadButton] = [:]
+    /// Buttons that do nothing while shifted.
+    var muted: Set<PadButton> = []
+
+    init(button: PadButton) { self.button = button }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        button = try c.decode(PadButton.self, forKey: .button)
+        sendsButton = try c.decodeIfPresent(Bool.self, forKey: .sendsButton) ?? false
+        remap = try c.decodeIfPresent([String: PadButton].self, forKey: .remap) ?? [:]
+        muted = try c.decodeIfPresent(Set<PadButton>.self, forKey: .muted) ?? []
+    }
+
+    var isIdle: Bool { remap.isEmpty && muted.isEmpty }
+
+    /// What the buttons held become.
+    func apply(_ held: Set<PadButton>) -> Set<PadButton> {
+        guard held.contains(button) else { return held }
+        var out = Set<PadButton>()
+        for b in held {
+            if b == button {
+                if sendsButton { out.insert(b) }
+            } else if !muted.contains(b) {
+                out.insert(remap[b.rawValue] ?? b)
+            }
+        }
+        return out
+    }
+
+    /// What `button` does while shifted.
+    enum Target: Hashable {
+        case same
+        case nothing
+        case other(PadButton)
+    }
+
+    func target(of b: PadButton) -> Target {
+        if muted.contains(b) { return .nothing }
+        if let t = remap[b.rawValue] { return .other(t) }
+        return .same
+    }
+
+    mutating func set(_ t: Target, for b: PadButton) {
+        remap[b.rawValue] = nil
+        muted.remove(b)
+        switch t {
+        case .same: break
+        case .nothing: muted.insert(b)
+        case .other(let to): if to != b { remap[b.rawValue] = to }
+        }
     }
 }
 
@@ -113,6 +207,8 @@ struct PadProfile: Codable, Hashable {
     var zones: [ZoneSpec] = []
     /// The buttons that beat while held: let go and pressed again ten times a second (a locked one does it until the next tap).
     var turbo: Set<PadButton> = []
+    /// The shift key, if the layout has one.
+    var shift: ShiftSpec?
     /// For a button, the other buttons it presses with it (by PadButton.rawValue).
     var combos: [String: Set<PadButton>] = [:]
 
@@ -127,10 +223,11 @@ struct PadProfile: Codable, Hashable {
         gyro = try c.decodeIfPresent(GyroRule.self, forKey: .gyro)
         zones = try c.decodeIfPresent([ZoneSpec].self, forKey: .zones) ?? []
         turbo = try c.decodeIfPresent(Set<PadButton>.self, forKey: .turbo) ?? []
+        shift = try c.decodeIfPresent(ShiftSpec.self, forKey: .shift)
         combos = try c.decodeIfPresent([String: Set<PadButton>].self, forKey: .combos) ?? [:]
     }
 
-    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty && turbo.isEmpty && combos.isEmpty }
+    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty && turbo.isEmpty && combos.isEmpty && shift == nil }
 
     func also(_ button: PadButton) -> Set<PadButton> { combos[button.rawValue] ?? [] }
 
@@ -143,6 +240,7 @@ struct PadProfile: Codable, Hashable {
         locked.remove(button)
         turbo.remove(button)
         combos[button.rawValue] = nil
+        if shift?.button == button { shift = nil }
     }
 
     func rule(_ id: String) -> StickRule { sticks[id] ?? StickRule() }

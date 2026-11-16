@@ -273,6 +273,7 @@ struct LayoutEditor: View {
                     .foregroundStyle(Wii.text)
             }
             alsoMenu(button)
+            shiftSection(button)
         } else if keys.count > 1 {
             chipRow("Lock on tap", systemImage: "lock.fill", keys: keys, isOn: { profile.locked.contains($0) },
                     toggle: { lockBinding($0).wrappedValue.toggle() })
@@ -303,6 +304,67 @@ struct LayoutEditor: View {
                 .accessibilityLabel(Text(layout.label(for: button).title))
                 .accessibilityAddTraits(on ? .isSelected : [])
             }
+        }
+    }
+
+    private func shiftBinding(_ button: PadButton) -> Binding<Bool> {
+        Binding(get: { profile.shift?.button == button }, set: { on in
+            if on { profile.shift = ShiftSpec(button: button) } else if profile.shift?.button == button { profile.shift = nil }
+        })
+    }
+
+    /// Makes the key a shift key: while it is held (lock it to make it a switch), the other buttons become what is set here.
+    @ViewBuilder
+    private func shiftSection(_ button: PadButton) -> some View {
+        Toggle(isOn: shiftBinding(button)) {
+            Label("Shift key", systemImage: "square.2.layers.3d")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Wii.text)
+        }
+        if let shift = profile.shift, shift.button == button {
+            let spec = Binding(get: { shift }, set: { profile.shift = $0 })
+            Toggle(isOn: spec.sendsButton) {
+                Text("Also send this button")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(Wii.text)
+            }
+            Text("While it is held, each button becomes:")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Wii.muted)
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 6) {
+                ForEach(ordered(addable.filter { $0 != button && $0 != .ls && $0 != .rs }), id: \.self) { source in
+                    shiftMenu(source, spec: spec)
+                }
+            }
+        }
+    }
+
+    private func shiftMenu(_ source: PadButton, spec: Binding<ShiftSpec>) -> some View {
+        let target = spec.wrappedValue.target(of: source)
+        let name = base.label(for: source).title
+        return Menu {
+            Button("Stays \(name)") { spec.wrappedValue.set(.same, for: source) }
+            Button("Nothing") { spec.wrappedValue.set(.nothing, for: source) }
+            Divider()
+            ForEach(ordered(addable.filter { $0 != source && $0 != spec.wrappedValue.button }), id: \.self) { other in
+                Button(base.label(for: other).title) { spec.wrappedValue.set(.other(other), for: source) }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Text(name)
+                    .font(.system(size: 13, weight: .semibold))
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 10, weight: .bold))
+                switch target {
+                case .same: Text("—").font(.system(size: 13, weight: .semibold)).foregroundStyle(Wii.muted)
+                case .nothing: Image(systemName: "nosign").font(.system(size: 12, weight: .bold))
+                case .other(let to): Text(base.label(for: to).title).font(.system(size: 13, weight: .semibold))
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 9).fill(target == .same ? AnyShapeStyle(Wii.buttonFill) : AnyShapeStyle(Wii.blue.opacity(0.18))))
         }
     }
 
@@ -380,9 +442,9 @@ struct LayoutEditor: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
-    private func sensitivityRow(_ value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+    private func sensitivityRow(_ value: Binding<Double>, range: ClosedRange<Double>, title: LocalizedStringKey = "Speed") -> some View {
         HStack(spacing: 10) {
-            Text("Speed")
+            Text(title)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Wii.text)
             Slider(value: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = ($0 * 20).rounded() / 20 }), in: range)
@@ -462,6 +524,12 @@ struct LayoutEditor: View {
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(Wii.text)
         }
+        Button {
+            rule.wrappedValue = StickRule.directionButtons
+        } label: {
+            Label("Make it the direction buttons", systemImage: "dpad.fill")
+                .font(.system(size: 13, weight: .semibold))
+        }
         Text("Presses a button when tilted")
             .font(.system(size: 12, weight: .semibold))
             .foregroundStyle(Wii.muted)
@@ -470,6 +538,15 @@ struct LayoutEditor: View {
             directionMenu("Down", systemImage: "arrow.down", selection: rule.down)
             directionMenu("Left", systemImage: "arrow.left", selection: rule.left)
             directionMenu("Right", systemImage: "arrow.right", selection: rule.right)
+            directionMenu("Full tilt", systemImage: "arrow.up.left.and.arrow.down.right", selection: rule.edge)
+        }
+        if rule.wrappedValue.mapsButtons {
+            Toggle(isOn: rule.snapFour) {
+                Text("Four directions only")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Wii.text)
+            }
+            sensitivityRow(rule.threshold, range: StickRule.thresholdRange, title: "Reach")
         }
     }
 

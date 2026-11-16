@@ -238,6 +238,7 @@ struct PadLayout {
     var locking: Set<PadButton> = []
     /// The buttons that beat while held (PadProfile.turbo), and what a button also presses (PadProfile.combos).
     var turbo: Set<PadButton> = []
+    var shift: ShiftSpec?
     var combos: [PadButton: Set<PadButton>] = [:]
     /// What each stick does besides tilting (PadProfile.sticks).
     var stickRules: [Side: StickRule] = [:]
@@ -292,6 +293,7 @@ struct PadLayout {
         layout.controls = out
         layout.locking = profile.locked
         layout.turbo = profile.turbo
+        layout.shift = profile.shift
         for (name, extra) in profile.combos {
             if let button = PadButton(rawValue: name) { layout.combos[button] = extra }
         }
