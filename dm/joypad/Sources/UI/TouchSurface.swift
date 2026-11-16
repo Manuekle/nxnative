@@ -86,6 +86,9 @@ final class TouchSurfaceView: UIView {
     /// slides onto one, or stays on it, does nothing.
     private var latched: Set<PadButton> = []
     private var last = InputFrame()
+    /// What was held before the turbo let go of it, to buzz only for a new press and not for every beat.
+    private var lastHeld: Set<PadButton> = []
+    private var turboTimer: Timer?
     private var lastOrientation = UIInterfaceOrientation.unknown
     private lazy var feedback = UIImpactFeedbackGenerator(style: .light, view: self)
 
@@ -275,6 +278,8 @@ final class TouchSurfaceView: UIView {
         stickOwner.removeAll()
         pulses.removeAll()
         latched.removeAll()
+        turboTimer?.invalidate()
+        turboTimer = nil
         // Not during SwiftUI's update of this view: the frame goes to observed state.
         Task { @MainActor [weak self] in self?.publish() }
     }
@@ -299,11 +304,26 @@ final class TouchSurfaceView: UIView {
             out[side] = stick
             buttons.formUnion(pressed)
         }
+        buttons = ButtonMath.withCombos(buttons, layout.combos)
+        let held = buttons
+        // Turbo beats only while something it holds is down: a timer republishes until then
+        if held.isDisjoint(with: layout.turbo) {
+            turboTimer?.invalidate()
+            turboTimer = nil
+        } else {
+            if turboTimer == nil {
+                turboTimer = Timer.scheduledTimer(withTimeInterval: ButtonMath.turboHalfPeriod / 2, repeats: true) { [weak self] _ in
+                    self?.publish()
+                }
+            }
+            buttons = ButtonMath.withTurbo(buttons, turbo: layout.turbo, down: ButtonMath.turboDown(at: CACurrentMediaTime()))
+        }
         let frame = InputFrame(buttons: buttons,
                                leftStick: out[.left] ?? .zero,
                                rightStick: out[.right] ?? .zero)
+        defer { lastHeld = held }
         guard frame != last else { return }
-        if options.pressHaptics, !buttons.subtracting(last.buttons).isEmpty {
+        if options.pressHaptics, !held.subtracting(lastHeld).isEmpty {
             feedback.impactOccurred(intensity: 0.75)
         }
         last = frame

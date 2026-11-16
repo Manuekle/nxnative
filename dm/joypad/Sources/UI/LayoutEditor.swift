@@ -222,7 +222,7 @@ struct LayoutEditor: View {
                 .font(.system(size: 13, weight: .semibold))
             } else if control.isExtra {
                 Button(role: .destructive) {
-                    profile.locked.subtract(lockable(control).filter { button in !stillDrawn(button, without: control.id) })
+                    lockable(control).filter { button in !stillDrawn(button, without: control.id) }.forEach { profile.forget($0) }
                     profile.removeExtra(control.id)
                     selection = nil
                 } label: {
@@ -267,26 +267,84 @@ struct LayoutEditor: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Wii.text)
             }
-        } else if keys.count > 1 {
-            HStack(spacing: 8) {
-                Label("Lock on tap", systemImage: "lock.fill")
+            Toggle(isOn: turboBinding(button)) {
+                Label("Turbo", systemImage: "bolt.fill")
                     .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(Wii.text)
-                Spacer()
-                ForEach(keys, id: \.self) { button in
-                    let on = profile.locked.contains(button)
-                    Button {
-                        lockBinding(button).wrappedValue = !on
-                    } label: {
-                        KeyLabelView(label: layout.label(for: button), size: 14, color: on ? .white : Wii.textStrong)
-                            .frame(width: 30, height: 30)
-                            .background(Circle().fill(on ? AnyShapeStyle(Wii.primaryFill) : AnyShapeStyle(Wii.buttonFill)))
-                            .overlay(Circle().strokeBorder(on ? Wii.primaryRim : Wii.buttonRim, lineWidth: 2))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text(layout.label(for: button).title))
-                    .accessibilityAddTraits(on ? .isSelected : [])
+            }
+            alsoMenu(button)
+        } else if keys.count > 1 {
+            chipRow("Lock on tap", systemImage: "lock.fill", keys: keys, isOn: { profile.locked.contains($0) },
+                    toggle: { lockBinding($0).wrappedValue.toggle() })
+            chipRow("Turbo", systemImage: "bolt.fill", keys: keys, isOn: { profile.turbo.contains($0) },
+                    toggle: { turboBinding($0).wrappedValue.toggle() })
+        }
+    }
+
+    /// A row of round keys, one for each button of a control, that turn an option on or off for that button.
+    private func chipRow(_ title: LocalizedStringKey, systemImage: String, keys: [PadButton],
+                         isOn: @escaping (PadButton) -> Bool, toggle: @escaping (PadButton) -> Void) -> some View {
+        HStack(spacing: 8) {
+            Label(title, systemImage: systemImage)
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Wii.text)
+            Spacer()
+            ForEach(keys, id: \.self) { button in
+                let on = isOn(button)
+                Button {
+                    toggle(button)
+                } label: {
+                    KeyLabelView(label: layout.label(for: button), size: 14, color: on ? .white : Wii.textStrong)
+                        .frame(width: 30, height: 30)
+                        .background(Circle().fill(on ? AnyShapeStyle(Wii.primaryFill) : AnyShapeStyle(Wii.buttonFill)))
+                        .overlay(Circle().strokeBorder(on ? Wii.primaryRim : Wii.buttonRim, lineWidth: 2))
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel(Text(layout.label(for: button).title))
+                .accessibilityAddTraits(on ? .isSelected : [])
+            }
+        }
+    }
+
+    private func turboBinding(_ button: PadButton) -> Binding<Bool> {
+        Binding(get: { profile.turbo.contains(button) }, set: { on in
+            if on { profile.turbo.insert(button) } else { profile.turbo.remove(button) }
+        })
+    }
+
+    /// The other buttons a button presses with it: one tap of it, a combination in the game.
+    private func alsoMenu(_ button: PadButton) -> some View {
+        let also = profile.also(button)
+        return HStack {
+            Label("Also presses", systemImage: "plus.square.on.square")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Wii.text)
+            Spacer()
+            Menu {
+                ForEach(ordered(addable.filter { $0 != button }), id: \.self) { other in
+                    Button {
+                        var next = also
+                        if next.contains(other) { next.remove(other) } else { next.insert(other) }
+                        profile.setAlso(next, for: button)
+                    } label: {
+                        if also.contains(other) {
+                            Label(base.label(for: other).title, systemImage: "checkmark")
+                        } else {
+                            Text(base.label(for: other).title)
+                        }
+                    }
+                }
+                if !also.isEmpty {
+                    Divider()
+                    Button("Nothing", role: .destructive) { profile.setAlso([], for: button) }
+                }
+            } label: {
+                Text(also.isEmpty ? "—" : also.map { base.label(for: $0).title }.sorted().joined(separator: " "))
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                    .padding(.horizontal, 10)
+                    .frame(minWidth: 70, minHeight: 30)
+                    .background(RoundedRectangle(cornerRadius: 9).fill(also.isEmpty ? AnyShapeStyle(Wii.buttonFill) : AnyShapeStyle(Wii.blue.opacity(0.18))))
             }
         }
     }
@@ -418,10 +476,7 @@ struct LayoutEditor: View {
     private func directionMenu(_ name: LocalizedStringKey, systemImage: String, selection: Binding<PadButton?>) -> some View {
         Menu {
             Button("Nothing") { selection.wrappedValue = nil }
-            // The buttons a game holds down to drive come first
-            let first: [PadButton] = [.a, .b, .x, .y, .zr, .zl, .r, .l]
-            let all = addable
-            ForEach(first.filter(all.contains) + all.filter { !first.contains($0) }, id: \.self) { button in
+            ForEach(ordered(addable), id: \.self) { button in
                 Button(base.label(for: button).title) { selection.wrappedValue = button }
             }
         } label: {
@@ -466,6 +521,12 @@ struct LayoutEditor: View {
     private var addable: [PadButton] {
         var seen = Set<PadButton>()
         return base.buttons.filter { seen.insert($0).inserted }
+    }
+
+    /// The buttons a game holds down to drive come first.
+    private func ordered(_ all: [PadButton]) -> [PadButton] {
+        let first: [PadButton] = [.a, .b, .x, .y, .zr, .zl, .r, .l]
+        return first.filter(all.contains) + all.filter { !first.contains($0) }
     }
 
     private func addTitle(_ button: PadButton) -> String {

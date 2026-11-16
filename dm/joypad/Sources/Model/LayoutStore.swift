@@ -111,6 +111,10 @@ struct PadProfile: Codable, Hashable {
     /// The phone's motion as a stick; nil is off.
     var gyro: GyroRule?
     var zones: [ZoneSpec] = []
+    /// The buttons that beat while held: let go and pressed again ten times a second (a locked one does it until the next tap).
+    var turbo: Set<PadButton> = []
+    /// For a button, the other buttons it presses with it (by PadButton.rawValue).
+    var combos: [String: Set<PadButton>] = [:]
 
     init() {}
 
@@ -122,9 +126,24 @@ struct PadProfile: Codable, Hashable {
         sticks = try c.decodeIfPresent([String: StickRule].self, forKey: .sticks) ?? [:]
         gyro = try c.decodeIfPresent(GyroRule.self, forKey: .gyro)
         zones = try c.decodeIfPresent([ZoneSpec].self, forKey: .zones) ?? []
+        turbo = try c.decodeIfPresent(Set<PadButton>.self, forKey: .turbo) ?? []
+        combos = try c.decodeIfPresent([String: Set<PadButton>].self, forKey: .combos) ?? [:]
     }
 
-    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty }
+    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty && turbo.isEmpty && combos.isEmpty }
+
+    func also(_ button: PadButton) -> Set<PadButton> { combos[button.rawValue] ?? [] }
+
+    mutating func setAlso(_ extra: Set<PadButton>, for button: PadButton) {
+        combos[button.rawValue] = extra.isEmpty ? nil : extra.subtracting([button])
+    }
+
+    /// A button no control draws any more keeps no lock, turbo or combo.
+    mutating func forget(_ button: PadButton) {
+        locked.remove(button)
+        turbo.remove(button)
+        combos[button.rawValue] = nil
+    }
 
     func rule(_ id: String) -> StickRule { sticks[id] ?? StickRule() }
 
