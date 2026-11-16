@@ -80,6 +80,8 @@ run: $(B)/t_mii $(B)/t_net_eventfd $(B)/t_language $(B)/t_motion $(B)/t_heap_siz
 	$(B)/t_pad_hid_mac
 	$(B)/t_pad_pro
 	$(B)/t_switch2
+	$(B)/t_netpad
+	$(PYTHON) t_netpad_host.py $(B)/t_netpad_host
 	$(B)/t_haptics
 	$(B)/t_haptics_apple
 	TMPDIR="$(abspath $(B))" $(B)/t_cheats $(QUIET)
@@ -449,6 +451,13 @@ $(B)/t_pad_pro: t_pad_pro.c ../pad_pro.h ../dm_input.h | $(B)
 	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_pad_pro.c
 $(B)/t_switch2: t_switch2.c ../switch2_proto.h ../dm_input.h | $(B)
 	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_switch2.c
+run: $(B)/t_netpad $(B)/t_netpad_host
+$(B)/t_netpad: t_netpad.c ../pad_net.h ../pad_jc1.h ../pad_pro.h ../hle_haptics.h ../dm_input.h | $(B)
+	$(CLANG) -O1 -g -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. -o $@ t_netpad.c
+# The receiver itself (pad_net_apple.m) with the npad layer stubbed, which t_netpad_host.py drives as a phone over the loopback
+$(B)/t_netpad_host: t_netpad_host.m ../pad_net_apple.m ../pad_net_apple.h ../pad_net.h ../pad_net_panel_mac.m ../pad_net_panel_mac.h $(GAME_H) | $(B)
+	$(CLANG) -O1 -g -fobjc-arc -Wall -Werror -Wno-unused-function -fsanitize=address,undefined -I.. $(GINC) -o $@ t_netpad_host.m ../pad_net_apple.m ../pad_net_panel_mac.m \
+		-framework Cocoa -framework CoreImage -framework SystemConfiguration
 
 # Line coverage (../../sanitizers/coverage.mk): make coverage builds every test of run into $(B)/cov with COV_FLAGS, runs them and writes $(B)/cov/coverage.lcov.
 # It measures, it does not test: make -i runs every test even after one fails (the plain run reports that), so the coverage of the others is kept.

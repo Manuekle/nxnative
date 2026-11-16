@@ -1,0 +1,41 @@
+{
+  "sourceLanguage": "en",
+  "version": "1.0",
+  "strings": {
+    "CFBundleDisplayName": {
+      "shouldTranslate": false
+    },
+    "NSCameraUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NX Pad reads the QR code your Mac shows to pair with it."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NX Pad lee el código QR que muestra tu Mac para vincularse con él."
+          }
+        }
+      }
+    },
+    "NSLocalNetworkUsageDescription": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NX Pad finds games on your local network and sends them what you press."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "NX Pad busca juegos en tu red local y les envía lo que pulsas."
+          }
+        }
+      }
+    }
+  }
+}

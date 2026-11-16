@@ -1,0 +1,7 @@
+// Signing for NX Pad. Put your own values in Signing.local.xcconfig beside this file (git ignores it), for example:
+//   DEVELOPMENT_TEAM = ABCDE12345
+//   PRODUCT_BUNDLE_IDENTIFIER = com.yourname.nxpad
+// A free Apple ID needs a bundle identifier of its own.
+DEVELOPMENT_TEAM =
+PRODUCT_BUNDLE_IDENTIFIER = io.github.nxnative.pad
+#include? "Signing.local.xcconfig"

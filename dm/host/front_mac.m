@@ -25,8 +25,12 @@
 #include "pad_apple.h"
 #include "pad_hid_mac.h"
 #include "pad_switch2_apple.h"
+#include "pad_net_apple.h"
+#include "pad_net_panel_mac.h"
 static int s2pad_player(s2_pad *d);   // the Switch 2 pads' player slots (below, beside the raw HID pads')
 static void s2pad_read(s2_pad *d);
+static int netpad_player(net_pad *d);   // the NX Pad phones' player slots (below, beside the Switch 2 pads')
+static void netpad_read(net_pad *d);
 static void (*g_merge_sink)(const dm_haptic_state *);   // DM_PAD_MERGE: where player 1's rumble goes, the pads last used (merge_rumble_to): NULL for GameController's
 static void merge_rumble_to(void (*sink)(const dm_haptic_state *));
 #include "home_quit.h"
@@ -258,7 +262,7 @@ static int pad_join(const void *owner, const char *name) {
 }
 // DM_PAD_MERGE: whether a controller still plays player 1 (gone: one just removed, not counted), a GameController one or a raw HID pad (pad_hid_mac.h)
 static int merge_pads_left(GCController *gone) {
-    if (g_hidpads || g_jc1_pads || dm_switch2_pads()) return 1;
+    if (g_hidpads || g_jc1_pads || dm_switch2_pads() || dm_netpad_pads()) return 1;
     for (GCController *c in GCController.controllers) if (c.extendedGamepad && c != gone) return 1;
     return 0;
 }
@@ -274,7 +278,7 @@ static void pads_changed(GCController *gone) {
             pad_read(c.extendedGamepad);
         }
         if (gone) dm_motion_detach(gone, 0);
-        if (!any) { if (!g_hidpads && !g_jc1_pads && !dm_switch2_pads()) dm_pad_set(0, 0, 0, 0, 0); dm_haptics_apple_controller(0, nil); }   // a raw HID pad still plays player 1 (pad_hid_mac.h)
+        if (!any) { if (!g_hidpads && !g_jc1_pads && !dm_switch2_pads() && !dm_netpad_pads()) dm_pad_set(0, 0, 0, 0, 0); dm_haptics_apple_controller(0, nil); }   // a raw HID pad still plays player 1 (pad_hid_mac.h)
         pads_motion_changed(gone);
         return;
     }
@@ -330,6 +334,7 @@ static void pads_release(void) {
     for (hid_pad *d = g_hidpads; d; d = d->next) { int p = pad_slot_of(&g_slots, d); if (p >= 0) dm_pad_set_player(p, 0, 0, 0, 0, 0); }
     for (s2_pad *d = dm_switch2_pads(); d; d = d->next) { int p = s2pad_player(d); if (p >= 0) { dm_pad_set_player(p, 0, 0, 0, 0, 0); dm_joy_set(p, 0, 0, 0, 0); dm_joy_set(p, 1, 0, 0, 0); } }
     for (jc1_pad *d = g_jc1_pads; d; d = d->next) { int p = jc1pad_player(d); if (p >= 0) { dm_pad_set_player(p, 0, 0, 0, 0, 0); dm_joy_set(p, 0, 0, 0, 0); dm_joy_set(p, 1, 0, 0, 0); } }
+    for (net_pad *d = dm_netpad_pads(); d; d = d->next) { int p = netpad_player(d); if (p >= 0) { dm_pad_set_player(p, 0, 0, 0, 0, 0); dm_joy_set(p, 0, 0, 0, 0); dm_joy_set(p, 1, 0, 0, 0); } }
 }
 static void hidpad_motion_clear(void) {   // the gyro of identical Pro Controllers read from IOKit (pad_hid_mac.h)
     for (hid_pad *d = g_hidpads; d; d = d->next) { int p = hidpad_full(d) ? pad_slot_of(&g_slots, d) : -1; if (p >= 0) dm_motion_clear_hid(p); }
@@ -341,6 +346,7 @@ static void pads_reread(void) {
     for (hid_pad *d = g_hidpads; d; d = d->next) hidpad_read(d);
     for (s2_pad *d = dm_switch2_pads(); d; d = d->next) s2pad_read(d);
     for (jc1_pad *d = g_jc1_pads; d; d = d->next) jc1pad_read(d);
+    for (net_pad *d = dm_netpad_pads(); d; d = d->next) netpad_read(d);
 }
 static void hq_close(void);
 static void input_release(void) {
@@ -349,7 +355,7 @@ static void input_release(void) {
     display_awake(0);
     g_input_on = 0;
     dm_motion_pro_active(0); hidpad_motion_clear();
-    dm_switch2_active(0); dm_jc1_active(0);
+    dm_switch2_active(0); dm_jc1_active(0); dm_netpad_active(0);
     g_btn = 0; g_w = g_a = g_s = g_d = 0; g_rl = g_ru = g_rr = g_rd = 0; push();
     if (g_mouse_down) { g_mouse_down = 0; dm_touch_set(NULL, 0); }
     pads_release();
@@ -358,7 +364,7 @@ static void input_resume(void) {
     display_awake(1);
     g_input_on = 1;
     dm_motion_pro_active(1);
-    dm_switch2_active(1); dm_jc1_active(1);
+    dm_switch2_active(1); dm_jc1_active(1); dm_netpad_active(1);
     pads_reread();
 }
 // Raw HID gamepads (pad_hid_mac.h): a player slot each, as a GameController controller, named by the device's product name. Identical pads that GameController lists
@@ -497,6 +503,45 @@ static void jc1pad_detach(jc1_pad *d) {   // d is already off g_jc1_pads
     cp_poll();   // one player fewer
 }
 static void jc1_models_changed(void) { pads_changed(nil); }
+// NX Pad phones over the local network (pad_net_apple.h): a phone is a player's controller, a Joy-Con pair or one held sideways, from its connection (from its first button press
+// with DM_PAD_PRESS_TO_JOIN), as a Switch 2 controller; its rumble goes back to the phone
+static int netpad_player(net_pad *d) { return g_merge ? 0 : pad_slot_of(&g_slots, d); }
+static void netpad_read(net_pad *d) {
+    hq_poll();   // Home and the prompt's A and B come from the phones too
+    if (!g_input_on || hq_blocks_input(g_hq.phase)) return;
+    int p = netpad_player(d);
+    uint64_t m; int32_t s[4]; if (!dm_netpad_state(d, &m, s)) return;
+    if (p < 0) {   // DM_PAD_PRESS_TO_JOIN=1: joins at its first button
+        if (!g_press_to_join || !m || (p = pad_join(d, d->name)) < 0) return;
+        dm_haptics_apple_set_sink(p, dm_netpad_rumble);
+    }
+    if (cp_poll()) return;   // the controller applet's prompt has the controllers
+    if (m) merge_rumble_to(dm_netpad_rumble);
+    pad_set(p, m, s[0], s[1], s[2], s[3]);
+}
+static int netpad_attach(net_pad *d) {   // 1: kept (a player, or waiting for its first button press); 0: no free player (pad_net_apple.h)
+    if (g_press_to_join && !g_merge) { LOG("controller '%s' (Wi-Fi) connected: press a button to play (DM_PAD_PRESS_TO_JOIN)", d->name); cp_poll(); return 1; }
+    int p = g_merge ? 0 : pad_slot_take(&g_slots, d, d->name); char nb[16];
+    if (p < 0) { LOG("controller '%s' (Wi-Fi) connected: all %d players are taken, not used", d->name, DM_PLAYERS); return 0; }
+    npad_name(p, nb, sizeof nb); LOG("controller '%s' (Wi-Fi) connected: player %d (npad %s)", d->name, p + 1, nb);
+    if (!g_merge) { dm_pad_players(pad_slot_mask(&g_slots)); dm_haptics_apple_set_sink(p, dm_netpad_rumble); }   // its rumble goes back to the phone, not to a Core Haptics engine
+    cp_poll();   // one controller fewer to wait for
+    return 1;
+}
+static void netpad_detach(net_pad *d) {   // d is already off the phones' list
+    if (g_merge) {
+        LOG("controller '%s' (Wi-Fi) disconnected", d->name);
+        if (!dm_netpad_pads() && g_merge_sink == dm_netpad_rumble) merge_rumble_to(NULL);
+        if (!merge_pads_left(nil)) dm_pad_set(0, 0, 0, 0, 0);
+        return;
+    }
+    int p = pad_slot_free(&g_slots, d); char nb[16]; if (p < 0) { cp_poll(); return; }   // one that had not joined: one fewer waiting
+    dm_haptics_apple_set_sink(p, NULL);
+    npad_name(p, nb, sizeof nb); LOG("controller '%s' (Wi-Fi) disconnected: player %d (npad %s) is free", d->name, p + 1, nb);
+    dm_pad_set_player(p, 0, 0, 0, 0, 0);
+    dm_pad_players(pad_slot_mask(&g_slots));
+    cp_poll();   // one player fewer
+}
 // Quit with the Home button (home_quit.h, LNPANDY/NX2Apple#336): held for 2 s it opens the prompt (home_quit_mac.h) over the game's view, A quits through the same path as ⌘Q
 // (NSApp terminate, so the save writer and the other exit handlers run as there), B or Home closes it. While the prompt is open the game is told it lost the focus, as the
 // Switch's HOME menu does, and gets no controller input or touch; the keyboard and ⌘Q work as always. DM_HOME_QUIT=0 turns it off
@@ -537,6 +582,7 @@ static void hq_buttons(int *home, int *a, int *b, GCController **holder) {
     }
     for (s2_pad *d = dm_switch2_pads(); d; d = d->next) { if (s2_pad_home(&d->st)) *home = 1; s2_pad_ab(&d->st, a, b); }   // Switch 2 controllers: no GCController, so no holder (the prompt shows the default A / B symbols)
     for (jc1_pad *d = g_jc1_pads; d; d = d->next) { if (jc1_pad_home(d)) *home = 1; jc1_pad_ab(d, a, b); }   // original Joy-Cons read from HID (pad_jc1_mac.h)
+    for (net_pad *d = dm_netpad_pads(); d; d = d->next) { if (dm_netpad_home(d)) *home = 1; dm_netpad_ab(d, a, b); }   // NX Pad phones (pad_net_apple.h)
 }
 static void hq_fade(NSView *v, int in) {
     if (!v) return;
@@ -608,6 +654,7 @@ static void cp_buttons(int *a, int *b) {
     for (hid_pad *d = g_hidpads; d; d = d->next) { uint64_t m = d->twin && hidpad_is_pro(d) ? d->pro_m : pad_hid_buttons(&d->st); *a |= !!(m & DM_BTN_A); *b |= !!(m & DM_BTN_B); }
     for (s2_pad *d = dm_switch2_pads(); d; d = d->next) s2_pad_ab(&d->st, a, b);   // Switch 2 controllers (pad_switch2_apple.h)
     for (jc1_pad *d = g_jc1_pads; d; d = d->next) jc1_pad_ab(d, a, b);             // original Joy-Cons read from HID (pad_jc1_mac.h)
+    for (net_pad *d = dm_netpad_pads(); d; d = d->next) dm_netpad_ab(d, a, b);      // NX Pad phones (pad_net_apple.h)
 }
 static int cp_waiting(void) {   // connected controllers that are no player yet
     if (g_merge) return 0;
@@ -616,6 +663,7 @@ static int cp_waiting(void) {   // connected controllers that are no player yet
     for (jc1_pad *d = g_jc1_pads; d; d = d->next) if (pad_slot_of(&g_slots, d) < 0) n++;
     for (hid_pad *d = g_hidpads; d; d = d->next) if (pad_slot_of(&g_slots, d) < 0) n++;
     for (s2_pad *d = dm_switch2_pads(); d; d = d->next) if (pad_slot_of(&g_slots, d) < 0) n++;
+    for (net_pad *d = dm_netpad_pads(); d; d = d->next) if (pad_slot_of(&g_slots, d) < 0) n++;
     return n;
 }
 static void cp_show(void) {   // the card, built again when its count or its done action changes
@@ -678,6 +726,8 @@ static void pads_start(void) {
     hidpad_start();
     static const dm_switch2_front s2front = {s2pad_attach, s2pad_detach, s2pad_read, s2pad_player, s2pad_blocked};
     dm_switch2_start(&s2front);
+    static const dm_netpad_front netfront = {netpad_attach, netpad_detach, netpad_read, netpad_player, s2pad_blocked};
+    dm_netpad_start(&netfront);
 }
 
 // Mouse as a single-point touchscreen (front.h dm_touch_set): left button down / drag = finger 0, release = lifted. The content view takes the clicks,
@@ -941,6 +991,7 @@ static DmCheatsPanel *g_cheats_panel;   // created on the first Show Cheats Wind
 }
 @end
 static DmCheatsMenuDelegate *g_cheats_menu;   // NSMenu keeps its delegate unretained
+
 
 @implementation DmCheatsPanel {
     NSPanel *_panel;              // created once in show, kept for the process's lifetime
@@ -1626,6 +1677,12 @@ void front_run(void (*guest)(void)) {
         [[bar addItemWithTitle:@"Cheats" action:nil keyEquivalent:@""] setSubmenu:cm];
         if (getenv("DM_CHEATS_WINDOW") && atoi(getenv("DM_CHEATS_WINDOW")))   // the Cheats panel open from the start (beside the game, not key)
             dispatch_async(dispatch_get_main_queue(), ^{ [g_cheats_menu showPanel:nil]; });
+        // Controllers: Pair iPhone… (⌘⇧P) shows the code an NX Pad phone pairs with this Mac by (pad_net_panel_mac.m)
+        NSMenu *ctl = [[NSMenu alloc] initWithTitle:@"Controllers"];
+        [ctl addItem:dm_netpad_pair_menu_item()];
+        [[bar addItemWithTitle:@"Controllers" action:nil keyEquivalent:@""] setSubmenu:ctl];
+        if (getenv("DM_NXPAD_PAIR_WINDOW") && atoi(getenv("DM_NXPAD_PAIR_WINDOW")))   // the pairing window open from the start
+            dispatch_async(dispatch_get_main_queue(), ^{ dm_netpad_panel_show(); });
         [[bar addItemWithTitle:@"Window" action:nil keyEquivalent:@""] setSubmenu:wm];
         [wm addItemWithTitle:@"Enter Full Screen" action:@selector(toggleFullScreen:) keyEquivalent:@"f"].keyEquivalentModifierMask = NSEventModifierFlagControl | NSEventModifierFlagCommand;
         NSApp.mainMenu = bar;

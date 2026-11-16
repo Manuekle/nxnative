@@ -16,6 +16,7 @@ AREAS = [   # label, color, description, paths (regular expression, matched from
      r'scripts/build_ipa_from_nsp\.py$|dm/tools/nx_extract(_bin)?/|dm/tools/native_tools\.sh$|dm/ios/tools/build_ipa\.sh$|dm/mac/pack_app\.py$|dm/gfx/tools/shader_split\.py$'),
     ('ios', 'c5def5', 'The iPhone and iPad app (dm/ios); on an issue, seen on one', r'dm/ios/'),
     ('mac', 'c5def5', 'The Mac front end and app (dm/mac, front_mac.m); on an issue, seen on a Mac', r'dm/mac/|dm/host/front_mac\.m$'),
+    ('joypad', 'c5def5', 'NX Pad, the iPhone app that plays as Joy-Cons for a game on the Mac (dm/joypad)', r'dm/joypad/'),
     ('tools', 'bfdadc', 'Tools and scripts (dm/tools, scripts)', r'dm/tools/|scripts/'),
     ('docs', '0075ca', 'Documentation', r'docs/|.*\.md$'),
     ('ci', 'ededed', 'Continuous integration and repository settings (.github)', r'\.github/'),

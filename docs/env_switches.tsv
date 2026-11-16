@@ -268,6 +268,13 @@ DM_NVN_VSDUMP_KEY	diagnostic	Vertex key to capture, or `*` for all eligible vert
 DM_NVN_VSDUMP_MAX	diagnostic	Maximum post-vertex captures (default 1, or 256 for the wildcard key)
 DM_NVN_WAITS	diagnostic	`=1` turns on the wait ledger: every place a host or game thread waits on the CPU for the GPU or the encode thread, counted per frame
 DM_NVN_ZBLOCK	diagnostic	`=1` logs (`[zb]`) the all-zero blocks per level of each ASTC texture uploaded on the CPU (magenta when drawn); `=<folder>` also writes the raw storage of the first one per format and size
+DM_NXPAD	player	Phone controllers (the settings window's): an iPhone running NX Pad (dm/joypad), paired with this Mac, plays as Joy-Cons over the local network. `auto` (default) listens when some phone is paired with this Mac (<Application Support>/nxnative/nxpad/paired.tsv), `=1` always, `=0` never by itself; not listening, no socket is opened and nothing is advertised. Controllers > Pair iPhone… listens in every case for that run
+DM_NXPAD_DIR	diagnostic	`=<folder>` keeps the Mac's NX Pad ID and paired phones there instead of <Application Support>/nxnative/nxpad (dm/host/tests/t_netpad_host.py)
+DM_NXPAD_LOG	diagnostic	`=1` logs each NX Pad phone's packets and motion samples once a second, with its player and buttons, and failed sends
+DM_NXPAD_PAIR_WINDOW	diagnostic	`=1` opens the Pair iPhone… window (the pairing code and QR code) when the game starts
+DM_NXPAD_PORT	switch	`=<port>` is the UDP port NX Pad phones send to (default 48620); when it is taken, by a second game running, the system picks one and the Bonjour advertisement carries it
+DM_NXPAD_TEST_PAIR	test	`=1`: `tests/t_netpad_host.m` opens the pairing window at start and prints its code and QR link, for `t_netpad_host.py` to pair against
+DM_NXPAD_TEST_PANEL	test	`=<file.png>`: `tests/t_netpad_host.m` shows the Mac's Pair iPhone… window (pad_net_panel_mac.m) and writes a picture of it there, to look at it without a game
 DM_OBSOLETE	path	Folder the pipeline archive moves the files no pipeline was taken from into, under `<date time> <archive folder>/` (`arch_sweep`); the Mac run command sets `<id>_build/obsolete`, which the NSP script's next successful build empties. Unset (the app), they are removed
 DM_OE_SCRIPT	diagnostic	Scripted applet state changes at given seconds, `key=value@seconds,…` with keys `focus`, `opmode` and `bg` (`bg=1` / `bg=0` run the whole background round trip), e.g. `bg=1@20,bg=0@25`
 DM_OODLE_HOST	path	The Mac host binary that `shader_split.py` runs in its Oodle tool mode to decode Trinity packs (`ONEPACK` files); set by the NSP script

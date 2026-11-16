@@ -150,6 +150,11 @@ dm/host/motion_pro_mac.h	hle:*SixAxisSensor*	Mac Pro Controller and DualShock 4 
 dm/host/switch2_proto.h	hle:*hid*	Switch 2 controller protocol: reports, sticks, buttons, motion maps
 dm/host/pad_switch2_apple.h	hle:*hid*	Switch 2 controllers over Bluetooth LE (off unless DM_SW2=1)
 dm/host/pad_switch2_apple.m	hle:*hid*	Switch 2 controllers over Bluetooth LE (off unless DM_SW2=1)
+dm/host/pad_net.h	hle:*hid*	NX Pad phones over the local network: the protocol (listens only once a phone is paired, DM_NXPAD)
+dm/host/pad_net_apple.h	hle:*hid*	NX Pad phones over the local network (listens only once a phone is paired, DM_NXPAD)
+dm/host/pad_net_apple.m	hle:*hid*	NX Pad phones over the local network (listens only once a phone is paired, DM_NXPAD)
+dm/host/pad_net_panel_mac.h	hle:*hid*	the Mac's Pair iPhone… window for NX Pad phones (opened from the menu only)
+dm/host/pad_net_panel_mac.m	hle:*hid*	the Mac's Pair iPhone… window for NX Pad phones (opened from the menu only)
 dm/host/front.h	present:*	the front end
 dm/ios/*	*:*	the iOS app
 dm/third_party/ryujinx/src/Ryujinx.Graphics.Shader/Translation/ResourceReservations.cs	shader:stage:gs	geometry compute varying slots

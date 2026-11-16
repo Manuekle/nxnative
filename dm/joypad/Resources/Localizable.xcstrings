@@ -1,0 +1,1017 @@
+{
+  "sourceLanguage": "en",
+  "strings": {
+    "": {},
+    "%@ closed": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ se cerró"
+          }
+        }
+      }
+    },
+    "%@ is open: ⇄ switches to it": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ está abierto: ⇄ cambia a él"
+          }
+        }
+      }
+    },
+    "%@ · linked": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · vinculado"
+          }
+        }
+      }
+    },
+    "%@ · pair once to play": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · vincúlalo una vez para jugar"
+          }
+        }
+      }
+    },
+    "%@ · player %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · jugador %lld"
+          }
+        }
+      }
+    },
+    "%@ · update this game to play with NX Pad": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · actualiza este juego para jugar con NX Pad"
+          }
+        }
+      }
+    },
+    "%lld games open": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld juegos abiertos"
+          }
+        }
+      }
+    },
+    "A floating stick starts where your thumb lands. Tap a stick to click it; tap it, then touch it again and hold to keep it clicked.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una palanca flotante empieza donde pones el pulgar. Toca una palanca para pulsarla; tócala y vuelve a tocarla manteniendo el dedo para dejarla pulsada."
+          }
+        }
+      }
+    },
+    "A paired Mac's games show up and are joined as soon as they open. A Mac pairs once, with the code its game shows under Controllers > Pair iPhone….": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los juegos de un Mac vinculado aparecen y se conectan en cuanto se abren. Cada Mac se vincula una vez, con el código que muestra su juego en Controllers > Pair iPhone…."
+          }
+        }
+      }
+    },
+    "About": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Acerca de"
+          }
+        }
+      }
+    },
+    "Address (192.168.1.20 or mac.local:48620)": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dirección (192.168.1.20 o mac.local:48620)"
+          }
+        }
+      }
+    },
+    "Allow Local Network access for NX Pad in Settings to find games.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Permite el acceso a la red local para NX Pad en Ajustes para encontrar juegos."
+          }
+        }
+      }
+    },
+    "Back to games": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver a los juegos"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancelar"
+          }
+        }
+      }
+    },
+    "Close": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrar"
+          }
+        }
+      }
+    },
+    "Closed · open it on %@ to play": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cerrado · ábrelo en %@ para jugar"
+          }
+        }
+      }
+    },
+    "Colors": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colores"
+          }
+        }
+      }
+    },
+    "Connect": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar"
+          }
+        }
+      }
+    },
+    "Connect by address…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar por dirección…"
+          }
+        }
+      }
+    },
+    "Connecting…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectando…"
+          }
+        }
+      }
+    },
+    "Controller": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mando"
+          }
+        }
+      }
+    },
+    "Dead zone": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zona muerta"
+          }
+        }
+      }
+    },
+    "Done": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Listo"
+          }
+        }
+      }
+    },
+    "Feedback": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respuesta háptica"
+          }
+        }
+      }
+    },
+    "Floating sticks": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palancas flotantes"
+          }
+        }
+      }
+    },
+    "Forget": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Olvidar"
+          }
+        }
+      }
+    },
+    "Forget %@?": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Olvidar %@?"
+          }
+        }
+      }
+    },
+    "Game": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juego"
+          }
+        }
+      }
+    },
+    "Game rumble": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vibración del juego"
+          }
+        }
+      }
+    },
+    "Games": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juegos"
+          }
+        }
+      }
+    },
+    "Gray": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gris"
+          }
+        }
+      }
+    },
+    "In its menu bar: Controllers > Pair iPhone… (⌘⇧P).": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En su barra de menús: Controllers > Pair iPhone… (⌘⇧P)."
+          }
+        }
+      }
+    },
+    "Join open games by themselves": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conectar solo a los juegos abiertos"
+          }
+        }
+      }
+    },
+    "Joining %@…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entrando en %@…"
+          }
+        }
+      }
+    },
+    "Latency": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Latencia"
+          }
+        }
+      }
+    },
+    "Leave test": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Salir de la prueba"
+          }
+        }
+      }
+    },
+    "Left Joy-Con": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joy-Con izquierdo"
+          }
+        }
+      }
+    },
+    "Looking for games on this network…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buscando juegos en esta red…"
+          }
+        }
+      }
+    },
+    "Mac": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mac"
+          }
+        }
+      }
+    },
+    "Mode": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Modo"
+          }
+        }
+      }
+    },
+    "More games are open: ⇄ switches between them": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hay más juegos abiertos: ⇄ cambia entre ellos"
+          }
+        }
+      }
+    },
+    "Motion": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Movimiento"
+          }
+        }
+      }
+    },
+    "Neon blue and red": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Azul y rojo neón"
+          }
+        }
+      }
+    },
+    "Neon green and pink": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verde y rosa neón"
+          }
+        }
+      }
+    },
+    "Neon purple and orange": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Morado y naranja neón"
+          }
+        }
+      }
+    },
+    "No Mac answered. Open a game on your Mac and its Controllers > Pair iPhone… window, on the same Wi-Fi as this iPhone.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ningún Mac respondió. Abre un juego en tu Mac y su ventana Controllers > Pair iPhone…, en la misma Wi-Fi que este iPhone."
+          }
+        }
+      }
+    },
+    "No Mac yet.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no hay ningún Mac."
+          }
+        }
+      }
+    },
+    "No game open right now": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora no hay ningún juego abierto"
+          }
+        }
+      }
+    },
+    "No game played yet": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aún no has jugado a ningún juego"
+          }
+        }
+      }
+    },
+    "No pairing window is open. In the game on your Mac, choose Controllers > Pair iPhone…, then type the code it shows.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay ninguna ventana de vinculación abierta. En el juego de tu Mac, elige Controllers > Pair iPhone… y escribe el código que muestra."
+          }
+        }
+      }
+    },
+    "Not connected": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin conexión"
+          }
+        }
+      }
+    },
+    "Now playing %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ahora juegas a %@"
+          }
+        }
+      }
+    },
+    "Offline test": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Prueba sin conexión"
+          }
+        }
+      }
+    },
+    "On the Mac, open a game built with nxnative.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "En el Mac, abre un juego hecho con nxnative."
+          }
+        }
+      }
+    },
+    "Once for each Mac: then NX Pad joins its games by itself.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una vez por cada Mac: luego NX Pad entra solo en sus juegos."
+          }
+        }
+      }
+    },
+    "Open a game on your Mac, choose Controllers > Pair iPhone… and pair this iPhone once. Then its games show here and NX Pad joins them by itself.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre un juego en tu Mac, elige Controllers > Pair iPhone… y vincula este iPhone una vez. Después sus juegos aparecen aquí y NX Pad entra en ellos solo."
+          }
+        }
+      }
+    },
+    "Open a game on your Mac, on the same Wi-Fi: NX Pad joins it by itself.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre un juego en tu Mac, en la misma Wi-Fi: NX Pad entra solo."
+          }
+        }
+      }
+    },
+    "Open games": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Juegos abiertos"
+          }
+        }
+      }
+    },
+    "Open one on your Mac: NX Pad joins it by itself.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abre uno en tu Mac: NX Pad entra solo."
+          }
+        }
+      }
+    },
+    "Pair": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pareja"
+          }
+        }
+      }
+    },
+    "Pair a Mac": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vincular un Mac"
+          }
+        }
+      }
+    },
+    "Pair now": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vincular"
+          }
+        }
+      }
+    },
+    "Pair this iPhone with the Mac first": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primero vincula este iPhone con el Mac"
+          }
+        }
+      }
+    },
+    "Pair with %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vincular con %@"
+          }
+        }
+      }
+    },
+    "Paired Macs": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Macs vinculados"
+          }
+        }
+      }
+    },
+    "Paired with %@": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinculado con %@"
+          }
+        }
+      }
+    },
+    "Pairing…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vinculando…"
+          }
+        }
+      }
+    },
+    "Pastel": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        }
+      }
+    },
+    "Player %lld": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jugador %lld"
+          }
+        }
+      }
+    },
+    "Point at the QR code on the Mac's screen": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apunta al código QR de la pantalla del Mac"
+          }
+        }
+      }
+    },
+    "Point the Camera app at its QR code, or type its six numbers.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apunta la app Cámara a su código QR, o escribe sus seis números."
+          }
+        }
+      }
+    },
+    "Port": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Puerto"
+          }
+        }
+      }
+    },
+    "Press a button to play": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pulsa un botón para jugar"
+          }
+        }
+      }
+    },
+    "Protocol": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Protocolo"
+          }
+        }
+      }
+    },
+    "Reconnecting…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reconectando…"
+          }
+        }
+      }
+    },
+    "Right Joy-Con": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Joy-Con derecho"
+          }
+        }
+      }
+    },
+    "Rumble strength": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fuerza de la vibración"
+          }
+        }
+      }
+    },
+    "Scan its QR code, or type its six numbers.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escanea su código QR, o escribe sus seis números."
+          }
+        }
+      }
+    },
+    "Scan the QR code": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escanear el código QR"
+          }
+        }
+      }
+    },
+    "Send the phone's gyro": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Enviar el giroscopio del iPhone"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        }
+      }
+    },
+    "Size": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tamaño"
+          }
+        }
+      }
+    },
+    "Smaller if your thumbs do not reach every control, larger for bigger hands. The controls stay at the lower corners, where the thumbs rest.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más pequeño si tus pulgares no llegan a todos los controles, más grande para manos grandes. Los controles siguen en las esquinas de abajo, donde descansan los pulgares."
+          }
+        }
+      }
+    },
+    "Status": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estado"
+          }
+        }
+      }
+    },
+    "Sticks": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Palancas"
+          }
+        }
+      }
+    },
+    "Test rumble": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar la vibración"
+          }
+        }
+      }
+    },
+    "That address is not valid.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esa dirección no es válida."
+          }
+        }
+      }
+    },
+    "The Mac shows a new code every 10 minutes.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El Mac muestra un código nuevo cada 10 minutos."
+          }
+        }
+      }
+    },
+    "The game closed": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El juego se ha cerrado"
+          }
+        }
+      }
+    },
+    "The game has no free player": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El juego no tiene jugadores libres"
+          }
+        }
+      }
+    },
+    "The game reads the phone's movement as the Joy-Cons' motion sensors: aiming, tilting, shaking.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El juego lee el movimiento del iPhone como los sensores de movimiento de los Joy-Con: apuntar, inclinar, agitar."
+          }
+        }
+      }
+    },
+    "The game refused the controller": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El juego ha rechazado el mando"
+          }
+        }
+      }
+    },
+    "This Mac does not know this iPhone (any more). Pair it again with the code the Mac shows.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este Mac no conoce este iPhone (o lo olvidó). Vincúlalo otra vez con el código que muestra el Mac."
+          }
+        }
+      }
+    },
+    "This iPhone stops joining its games until it is paired again with a new code.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Este iPhone deja de entrar en sus juegos hasta que se vincule otra vez con un código nuevo."
+          }
+        }
+      }
+    },
+    "Try the layout offline": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Probar el mando sin conexión"
+          }
+        }
+      }
+    },
+    "Vibrate on press": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vibrar al pulsar"
+          }
+        }
+      }
+    },
+    "Waiting for the game…": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esperando al juego…"
+          }
+        }
+      }
+    },
+    "Wii": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wii"
+          }
+        }
+      }
+    },
+    "Wrong code. After too many tries the Mac shows a new one: type that one.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código incorrecto. Tras demasiados intentos el Mac muestra uno nuevo: escribe ese."
+          }
+        }
+      }
+    },
+    "Wrong code. Check the numbers on the Mac.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Código incorrecto. Revisa los números del Mac."
+          }
+        }
+      }
+    },
+    "⇄ beside the menu button switches too. Each game keeps your player and how you hold the phone.": {
+      "localizations": {
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "⇄, junto al botón del menú, también cambia. Cada juego guarda tu jugador y cómo sostienes el teléfono."
+          }
+        }
+      }
+    }
+  },
+  "version": "1.0"
+}

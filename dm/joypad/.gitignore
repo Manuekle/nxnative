@@ -1,0 +1,7 @@
+# Generated from project.yml by `xcodegen generate`
+/NXPad.xcodeproj/
+/Support/Info.plist
+# Each developer's signing team and bundle identifier
+/Support/Signing.local.xcconfig
+# A font you supply yourself (FOT-Rodin is a commercial typeface): it goes into your build, not into the repository
+/Resources/Fonts/

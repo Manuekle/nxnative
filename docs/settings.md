@@ -235,6 +235,10 @@ Turn off **Show this window at launch** to start the game at once with your choi
 
 **Off** by default. On, the game takes Joy-Con 2 and Pro Controller 2 over Bluetooth: hold the small Sync button on one during the game, until its player lights sweep, to pair it with this Mac; after that a press of any of its buttons connects it ([Switch 2 controllers](playing.md#switch-2-controllers-mac)). macOS asks for Bluetooth access the first time, and again after the app is packed again. In an `env.txt`: `DM_SW2=1`.
 
+### Phone controllers
+
+**When an iPhone is paired** by default: an iPhone running the NX Pad app ([dm/joypad](../dm/joypad/README.md)) plays as Joy-Cons over Wi-Fi once it is paired with this Mac (Controllers > Pair iPhone… during a game; [Phone controllers](playing.md#phone-controllers-mac)), and the game listens for it only while some phone is paired, so a Mac that never paired one opens nothing on the network. **Always** listens in every case; **Off** never by itself (Pair iPhone… still listens for that run). macOS may ask once whether the app may find devices on the local network. In an `env.txt`: `DM_NXPAD=auto`, `1` or `0`.
+
 ### Cloud saves folder
 
 **Choose a folder…** picks the iCloud Drive folder the game's save is synced through, the one the iPhone app chose in its launcher's **Cloud saves**, or the game's own folder inside it, named after its title ID ([Cloud saves](#cloud-saves)); **Turn off** stops it. Off by default. macOS may ask once whether the app may open iCloud Drive; if the game log says `this app may not open iCloud Drive`, allow it in System Settings › Privacy & Security › Files and Folders. In an `env.txt`: `DM_SAVE_SYNC=<folder>`, or `DM_SAVE_SYNC=icloud` for iCloud Drive › nxnative Saves; the window then shows it fixed.

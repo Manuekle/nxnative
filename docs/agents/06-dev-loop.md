@@ -98,6 +98,7 @@ Co-authored-by: …
   | `packing` | The NSP script, extraction, the shader split, the packers |
   | `ios` | The iPhone and iPad app (`dm/ios`) |
   | `mac` | The Mac front end and app (`dm/mac`, `front_mac.m`) |
+  | `joypad` | NX Pad, the iPhone app that plays as Joy-Cons for a game on the Mac (`dm/joypad`) |
   | `tools` | Tools and scripts (`dm/tools`, `scripts`) |
   | `docs` | Documentation, when the commit is nothing else |
   | `ci` | Continuous integration and repository settings (`.github`) |

@@ -1,0 +1,37 @@
+{
+  "fill": {
+    "solid": "extended-srgb:0.00000,0.65882,0.95294,1.00000"
+  },
+  "groups": [
+    {
+      "layers": [
+        {
+          "glass": true,
+          "image-name": "Glyph.svg",
+          "name": "Glyph",
+          "position": {
+            "scale": 1,
+            "translation-in-points": [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.5
+      },
+      "specular": true,
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": [
+      "iOS"
+    ]
+  }
+}
