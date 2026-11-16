@@ -8,17 +8,20 @@
   <title>nxnative — NX Packer &amp; NX Pad</title>
   <link rel="icon" href="assets/app-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
+  <script src="interactions.js" defer></script>
 </head>
 <body>
   <a class="skip button" href="#main">Skip to content</a>
   <header class="site-header">
     <div class="wrap toolbar">
       <a class="brand" href="#main"><img src="assets/app-icon.png" width="40" height="40" alt="">nxnative</a>
-      <nav aria-label="Main navigation">
-        <a class="button compact" href="#downloads">Downloads</a>
-        <a href="#packer">NX Packer</a>
-        <a href="#pad">NX Pad</a>
+      <nav class="site-nav t-tabs" aria-label="Main navigation">
+        <span class="t-tabs-pill" aria-hidden="true"></span>
+        <a class="t-tab" href="#downloads">Downloads</a>
+        <a class="t-tab" href="#packer">NX Packer</a>
+        <a class="t-tab" href="#pad">NX Pad</a>
       </nav>
+      <a class="button compact header-repo" href="https://github.com/Manuekle/nxnative">GitHub <span aria-hidden="true">↗</span></a>
     </div>
   </header>
 
@@ -29,16 +32,21 @@
           <h1 id="hero-title"><img src="assets/hero-title.png" width="1389" height="247" alt="Play on Mac. Control it with iPhone."></h1>
           <p>Build a game with NX Packer. Use NX Pad as your Joy-Cons over Wi-Fi.</p>
         </div>
-        <a class="button primary" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg"><span aria-hidden="true">↓</span> Download for Mac</a>
+        <div class="hero-actions">
+          <a class="button primary" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg"><span aria-hidden="true">↓</span> Download for Mac</a>
+          <button class="button" type="button" hidden data-pair-preview aria-haspopup="dialog" aria-controls="pair-preview">Preview pairing</button>
+        </div>
       </div>
 
       <figure class="session">
         <div class="session-media">
           <a class="game-monitor" href="assets/kirby-gameplay.webp">
-            <img src="assets/kirby-gameplay.webp" width="1600" height="900" alt="Kirby in Kirby and the Forgotten Land running in nxnative on Mac" fetchpriority="high">
+            <img class="device-screen" src="assets/kirby-gameplay.webp" width="1600" height="900" alt="Kirby in Kirby and the Forgotten Land running in nxnative on Mac" fetchpriority="high">
+            <img class="device-shell" src="assets/macbook-frame.svg" width="2048" height="1237" alt="">
           </a>
           <a class="controller" href="assets/pad-controller.webp">
-            <img src="assets/pad-controller.webp" width="1310" height="603" alt="NX Pad shows Kirby and the Forgotten Land connected as Player 1 with a pair of Joy-Cons">
+            <img class="device-screen" src="assets/pad-controller.webp" width="1310" height="603" alt="NX Pad shows Kirby and the Forgotten Land connected as Player 1 with a pair of Joy-Cons">
+            <img class="device-shell" src="assets/18pro-black.svg" width="1406" height="2822" alt="">
           </a>
         </div>
         <figcaption><em>Kirby and the Forgotten Land</em> on Mac, with NX Pad connected as Player&nbsp;1 in the iPhone simulator.</figcaption>
@@ -128,7 +136,10 @@ xcodegen generate</code></pre>
 PRODUCT_BUNDLE_IDENTIFIER = com.yourname.nxpad</code></pre>
           <p>Connect your iPhone, enable Developer Mode if prompted, and run <code>NXPad.xcodeproj</code> on the device. Allow Local Network access when NX Pad asks.</p>
         </details>
-        <a class="manual" href="https://github.com/Manuekle/nxnative/blob/nxpad-pairing/dm/joypad/README.md">Full iPhone guide <span aria-hidden="true">↗</span></a>
+        <div class="guide-actions">
+          <button class="button compact" type="button" hidden data-pair-preview aria-haspopup="dialog" aria-controls="pair-preview">See the pairing screen</button>
+          <a class="manual" href="https://github.com/Manuekle/nxnative/blob/nxpad-pairing/dm/joypad/README.md">Full iPhone guide <span aria-hidden="true">↗</span></a>
+        </div>
       </section>
     </div>
 
@@ -146,10 +157,43 @@ PRODUCT_BUNDLE_IDENTIFIER = com.yourname.nxpad</code></pre>
   </main>
 
   <footer class="site-footer">
-    <div class="wrap toolbar">
-      <a class="brand" href="#main"><img src="assets/app-icon.png" width="28" height="28" alt="">nxnative</a>
-      <a href="https://github.com/Manuekle/nxnative">View on GitHub <span aria-hidden="true">↗</span></a>
+    <div class="wrap window footer-window">
+      <div class="footer-brand">
+        <a class="brand" href="#main"><img src="assets/app-icon.png" width="42" height="42" alt="">nxnative</a>
+        <a class="button compact" href="#downloads">Get the apps <span aria-hidden="true">↑</span></a>
+      </div>
+      <nav class="footer-links" aria-label="Footer navigation">
+        <div><h2>Guides</h2><a href="#packer">NX Packer</a><a href="#pad">NX Pad</a><a href="#help">Troubleshooting</a></div>
+        <div><h2>Project</h2><a href="https://github.com/Manuekle/nxnative">GitHub <span aria-hidden="true">↗</span></a><a href="https://github.com/Manuekle/nxnative/releases">Releases <span aria-hidden="true">↗</span></a></div>
+      </nav>
     </div>
   </footer>
+
+  <dialog id="pair-preview" class="pair-dialog" aria-labelledby="pair-title" aria-describedby="pair-description">
+    <div class="t-modal pair-window window">
+      <header class="pair-toolbar">
+        <button type="button" class="button compact" data-pair-close autofocus>Close</button>
+        <h2 id="pair-title">Pair a Mac</h2>
+        <span class="pair-label">Preview</span>
+      </header>
+      <p id="pair-description">Open your game on the Mac and choose <strong>Controllers → Pair iPhone (NX Pad)…</strong>.</p>
+      <div class="pair-methods">
+        <div class="pair-card channel">
+          <h3>On your Mac</h3>
+          <img class="pair-qr" src="assets/pair-preview.png" width="234" height="234" alt="Example QR code. Scanning it opens the NX Pad guide.">
+          <strong class="pair-number">428 615</strong>
+          <p>Example QR and code</p>
+        </div>
+        <div class="pair-card channel">
+          <h3>On your iPhone</h3>
+          <div class="pair-code" aria-label="Example code 4 2 8 6 1 5">
+            <span aria-hidden="true">4</span><span aria-hidden="true">2</span><span aria-hidden="true">8</span>
+            <span aria-hidden="true">6</span><span aria-hidden="true">1</span><span aria-hidden="true">5</span>
+          </div>
+          <p>In NX Pad, tap <strong>Pair a Mac</strong> and scan or enter the code shown on your Mac.</p>
+        </div>
+      </div>
+    </div>
+  </dialog>
 </body>
 </html>
