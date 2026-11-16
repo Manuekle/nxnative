@@ -1,15 +1,31 @@
 # NX Pad
 
-An iPhone app that plays as Joy-Cons (Switch 1) for a game nxnative runs on the Mac: a pair, the phone held sideways in both hands, or one Joy-Con on its own, held sideways. It pairs once with a Mac (a QR code or six digits the game shows), then finds that Mac's games on the local network over Bonjour and joins them by itself; it sends what you press over UDP, with the phone's gyro and accelerometer as the Joy-Cons' six-axis sensor, and the game's rumble comes back to the phone's Taptic Engine.
+An iPhone app that plays as Joy-Cons (Switch 1) for a game nxnative runs on the Mac: a pair, the phone held sideways in both hands, or one Joy-Con on its own, held sideways. The phone pairs once with a Mac, with a QR code or six digits a game on that Mac shows; after that it finds that Mac's games on the local network over Bonjour and joins them by itself. What you press goes over UDP, the phone's gyro and accelerometer are the Joy-Cons' six-axis sensor, and the game's rumble comes back to the phone's Taptic Engine. Several games open at once each keep their own session, and one button switches between them.
 
-Status: pairing, joining, switching between two games and the controller tried in the Simulator against [tools/pad_listen.py](tools/pad_listen.py), which stands in for a game; the Mac host's receiver tried by `dm/host/tests/t_netpad_host.py`, not yet with a game. **Try the layout offline** shows the controller without a game.
+Status: pairing, joining, switching between two games and the controller tried in the Simulator against [tools/pad_listen.py](tools/pad_listen.py), which stands in for a game; the Mac host's receiver tried by `dm/host/tests/t_netpad_host.py`, and five Mac apps run with it; not yet played with on a phone. **Try the layout offline** shows the controller without a game.
 
-## Building
+- [What you need](#what-you-need)
+- [Install the app on the iPhone](#install-the-app-on-the-iphone)
+- [Get the Mac ready](#get-the-mac-ready)
+- [Pair the iPhone with the Mac](#pair-the-iphone-with-the-mac)
+- [Play](#play)
+- [Several games at once](#several-games-at-once)
+- [Troubleshooting](#troubleshooting)
+- [Try it without a game](#try-it-without-a-game)
+- [Protocol](#protocol)
+- [Host side](#host-side)
+- [Files](#files)
 
-Xcode 27.2 and xcodegen (`brew install xcodegen`); an iPhone with iOS 26 or later.
+## What you need
+
+- An iPhone with iOS 26 or later, on the same Wi-Fi network as the Mac (not a guest network that keeps devices apart).
+- A Mac with Xcode 27.2 (or later) and xcodegen (`brew install xcodegen`), and an Apple ID signed in to Xcode (Xcode > Settings > Accounts) to sign the app.
+- A game packed with a host that has the NX Pad receiver: a Mac app built from this repository after NX Pad's pairing came in. An older app has no receiver, and the phone does not see it ([Troubleshooting](#troubleshooting)).
+
+## Install the app on the iPhone
 
 1. In this folder, `xcodegen generate`. It writes `NXPad.xcodeproj` and `Support/Info.plist` (git ignores both; run it again after adding or removing files).
-2. Put your signing team in `Support/Signing.local.xcconfig` (git ignores it too):
+2. Put your signing team and a bundle identifier of your own in `Support/Signing.local.xcconfig` (git ignores it too). The team ID is in Xcode > Settings > Accounts, or in a signing certificate's name:
 
    ```
    DEVELOPMENT_TEAM = ABCDE12345
@@ -17,34 +33,73 @@ Xcode 27.2 and xcodegen (`brew install xcodegen`); an iPhone with iOS 26 or late
    ```
 
 3. Optional, for the Wii Menu's own typeface: put your FOT-Rodin Pro DB as `Resources/Fonts/RodinPro-DB.otf` before `xcodegen generate` (git ignores the folder: the font is commercial and stays out of the repository). Without it the app uses the system's rounded face.
-4. Open `NXPad.xcodeproj`, pick the iPhone and run.
+4. Connect the iPhone (USB, or the same network once it is paired with Xcode) and turn on Developer Mode on it the first time (Settings > Privacy & Security > Developer Mode).
+5. Open `NXPad.xcodeproj`, pick the iPhone and run. From the command line instead, with the iPhone's identifier from `xcrun devicectl list devices`:
 
-The first time it looks for games, iOS asks for Local Network access. Allow it, or the app finds nothing (Settings → Privacy & Security → Local Network turns it back on). Scanning the QR code in the app asks for the camera; the Camera app's scan opens NX Pad through its `nxpad://` link.
+   ```
+   xcodebuild -project NXPad.xcodeproj -scheme NXPad -configuration Release -destination 'id=<iPhone identifier>' -derivedDataPath build -allowProvisioningUpdates build
+   xcrun devicectl device install app --device '<iPhone identifier>' build/Build/Products/Release-iphoneos/NXPad.app
+   ```
 
-To try it without a game, on the Mac, on the same Wi-Fi:
+The first time it looks for games, iOS asks for Local Network access: allow it, or the app finds nothing (Settings > Privacy & Security > Local Network turns it back on). Scanning a QR code inside the app asks for the camera. With a free Apple ID the app stops opening after 7 days: run it again from Xcode.
+
+## Get the Mac ready
+
+Nothing to turn on: **Phone controllers** in a game's settings window is **When an iPhone is paired** by default ([Phone controllers](../../docs/settings.md#phone-controllers)). A game listens for phones once some phone is paired with the Mac, and also while its pairing window is open. **Always** listens in every case; **Off** never by itself.
+
+The first time a game listens, macOS may ask two things: whether the app may find devices on the local network, and (with the firewall on) whether it may accept incoming network connections. Allow both, or the phone finds the game but its datagrams never reach it.
+
+## Pair the iPhone with the Mac
+
+Once for each Mac, for every game on it:
+
+1. Open a game on the Mac and choose **Controllers > Pair iPhone (NX Pad)…** in its menu bar (⌘⇧P). A window shows a QR code and six digits.
+2. On the iPhone, point the Camera app at the QR code and tap the NX Pad link, or open NX Pad, tap **Pair a Mac** and either **Scan the QR code** or type the six digits. Tapping a game whose Mac does not know this phone opens the same sheet.
+3. The sheet shows **Paired with** followed by the Mac's name. The Mac's window lists the phone, and NX Pad joins the game.
+
+The code is used once, and changes after five wrong tries and every 10 minutes; after 15 wrong tries the window takes only the QR code until it opens again. To unpair, use **Forget** beside the phone in the Mac's window, or Settings > **Paired Macs** > **Forget** on the phone. A phone the Mac forgot forgets that Mac too, and asks to pair again.
+
+## Play
+
+- From then on a paired Mac's game joins by itself: one that opens while NX Pad shows its games screen takes the phone to the controller. The games screen lists the open games and, greyed, the ones played before on the paired Macs. **Back to games** (in the menu) lets every game go; each joins again once it closes and opens again. Settings > **Join open games by themselves** turns this off: a game is then joined with a tap.
+- How the phone is held, on the games screen or in the menu:
+  - **Pair**: the left Joy-Con on the left half of the screen (stick, direction buttons, −, Capture, L and ZL at the top), the right one on the right half (A B X Y, stick, +, Home, R and ZR). The player lights, the game and the latency sit between them.
+  - **Left Joy-Con** or **Right Joy-Con**: one Joy-Con held sideways across the screen, rail at the top with SL and SR, stick on the left. The game sees a single Joy-Con, as a real one held sideways; a game that only knows whole controllers reads it the way the host reads a sideways Joy-Con.
+- Fingers slide from key to key (rolling over the direction buttons, A to B), and a finger between two keys of the diamond presses both.
+- A stick tilts from its centre when the thumb lands on the ring, and from where the thumb lands when it lands on the knob (or always, with **Floating sticks**). A short tap clicks it (L3 / R3); tap it, then touch it again and hold, to keep it clicked.
+- Home held for two seconds opens the game's quit prompt.
+- The gear opens the menu: status, the open games, how the phone is held, settings, back to the games.
+- Settings: paired Macs, colours (**Wii**, the default, or a pair of real Joy-Con colours), size, stick dead zone, floating sticks, a tap on every press, game rumble and its strength, and whether the phone's motion is sent.
+- The look is the Wii Menu's: pearl stripes, white channels, glossy pill buttons, sky blue for what is selected.
+
+## Several games at once
+
+The phone stays linked to every open game of its paired Macs and keeps its player in each. The game shown gets the touches, the motion and the rumble; the others get a released controller. **⇄** beside the menu button goes to the next game, and the menu lists them all. A game that opens during play shows a line saying so; a game that closes is let go, and the phone goes on with the next one. Each game keeps how the phone is held.
+
+## Troubleshooting
+
+| What you see | Why | What to do |
+|---|---|---|
+| The games screen stays empty | The phone and the Mac are on different networks, NX Pad has no Local Network access, or the game does not listen | Same Wi-Fi for both; Settings > Privacy & Security > Local Network > NX Pad on; open the game's **Pair iPhone…** window, which always listens |
+| A game shows "update this game to play with NX Pad" | Its host speaks the first protocol, without pairing | Build the Mac app again from this repository |
+| A game does not show at all, even with its pairing window open | Its host has no receiver: its log (`~/Library/Logs/nxnative/<title ID>.log`) has no `[nxpad]` line | Build the Mac app again from this repository |
+| The game is listed but **Waiting for the game…** never ends | The Mac's firewall drops the phone's datagrams | Allow the game's incoming connections (System Settings > Network > Firewall > Options) |
+| **Wrong code** | A typo, or the code changed | Type the code the window shows now; the QR code avoids typing |
+| **No pairing window is open** | The code went to games whose window is closed | Open **Controllers > Pair iPhone…** in the game first |
+| **This Mac does not know this iPhone (any more)** | The Mac forgot the phone (**Forget**, or `paired.tsv` deleted) | Pair again |
+| The controller lags | A busy or distant Wi-Fi network | The menu shows the latency; a 5 GHz network close to both helps |
+
+On the Mac, the game's log names what happened with each phone in its `[nxpad]` lines; `DM_NXPAD_LOG=1` adds each phone's packets once a second.
+
+## Try it without a game
+
+On the Mac, on the same Wi-Fi:
 
 ```
 python3 dm/joypad/tools/pad_listen.py --rumble
 ```
 
 The phone lists the game "Test game"; the script prints a pairing code and the link the Mac's QR code would carry (open it in the Simulator with `xcrun simctl openurl booted '<link>'`), then what the phone holds, and with `--rumble` the phone rumbles while ZL (softly) or ZR (strongly) is held. `--state FILE` keeps its pairing across runs; a second one with `--port 48621 --title "Second game"` and the same `--state` is a second game on the same Mac. With the macOS firewall on, run it with a Python the firewall lets in (`/usr/bin/python3` usually is).
-
-## Pairing and joining
-
-- Pair once for each Mac: in any game on it, **Controllers > Pair iPhone (NX Pad)…** (⌘⇧P) shows a QR code and six digits. Scan the QR code (**Scan the QR code** in **Pair a Mac**, or the Camera app), or type the digits in **Pair a Mac**. A tap on a game of a Mac this phone does not know opens the same sheet. The code changes after each pairing, after five wrong tries and every 10 minutes.
-- After that the Mac's games join by themselves: one that opens while NX Pad waits on the games screen takes the phone to the controller, one that opens during play shows ⇄. The games screen lists the open games and, greyed, the ones played before on the paired Macs. **Back to games** (the menu) lets the games go; they join again once they close and open again. **Join open games by themselves** (Settings) turns this off: a game is then joined with a tap.
-- Several games open: the phone is linked to each and keeps its player in each; the one shown gets the touches, the motion and the rumble, the others a released controller. ⇄ beside the menu button goes to the next one; the menu lists them. Each game keeps how the phone is held.
-- Settings → **Paired Macs** forgets a Mac; the Mac's window forgets a phone (**Forget**), and a phone the Mac forgot forgets the Mac and asks to pair again.
-
-## Playing
-
-- **Pair**: the left Joy-Con on the left half of the screen (stick, direction buttons, −, Capture, L and ZL at the top), the right one on the right half (A B X Y, stick, +, Home, R and ZR). The player lights, the game and the latency sit between them.
-- **Left Joy-Con** or **Right Joy-Con**: one Joy-Con held sideways across the screen, rail at the top with SL and SR, stick on the left. The game sees a single Joy-Con, as a real one held sideways; a game that only knows whole controllers reads it the way the host reads a sideways Joy-Con.
-- Fingers slide from key to key (rolling over the direction buttons, A to B), and a finger between two keys of the diamond presses both.
-- A stick tilts from its centre when the thumb lands on the ring, and from where the thumb lands when it lands on the knob (or always, with **Floating sticks**). A short tap clicks it (L3 / R3); tap it, then touch it again and hold, to keep it clicked.
-- The gear opens the menu: status, the open games, the mode, settings, back to the games. ⇄ beside it (with more than one game open) switches games.
-- The look is the Wii Menu's (pearl stripes, white channels, glossy pill buttons, sky blue for what is selected); the controller's colours are **Wii** (the default) or a pair of real Joy-Con colours.
-- Settings: colours, stick dead zone, floating sticks, a tap on every press, game rumble and its strength, and whether the phone's motion is sent.
 
 ## Protocol
 
@@ -55,7 +110,7 @@ Every datagram starts with a 12-byte header:
 | Offset | Size | Field |
 |---|---|---|
 | 0 | 4 | magic `NXPD` (0x4450584E) |
-| 4 | 1 | version, 1 |
+| 4 | 1 | version, 2 |
 | 5 | 1 | kind |
 | 6 | 2 | reserved, 0 |
 | 8 | 4 | sequence number, per sender, wrapping |
@@ -94,7 +149,7 @@ Labels are their ASCII bytes, without a terminator. Both sides of a pairing keep
 
 What pairing protects: a phone that never paired, or a HELLO recorded and played back, takes no player. What it does not: the traffic is not hidden, INPUT is not signed (after a HELLO the host takes it from the phone's address), and someone on the same network who records a pairing by code can try the million codes against it offline (a QR token is too long for that).
 
-The phone sends HELLO every 500 ms until WELCOME comes; the host answers a HELLO without the right answer with CHALLENGE (the same one while it is good, 10 s), and the phone sends HELLO again at once with the answer. A PAIR is sent again every 400 ms to a game that has not answered, for 4 s; the host answers a PAIR it already answered with the same PAIRED, and counts a wrong one once. Then INPUT goes on every change, again for 120 ms after it (a lost datagram costs nothing), at least every 100 ms as a heartbeat, and with each batch of motion samples (about 100 a second); a PING goes every second. A phone that hears nothing for 3 s says HELLO again. It sends a new HELLO when its mode changes, and BYE when it disconnects or goes to the background.
+The phone sends HELLO every 500 ms until WELCOME comes; the host answers a HELLO without the right answer with CHALLENGE (the same one while it is good, 10 s), and the phone sends HELLO again at once with the answer. A PAIR is sent again every 400 ms to a game that has not answered, for 4 s; the host answers a PAIR it already answered with the same PAIRED, and counts a wrong one once. Then INPUT goes on every change, again for 120 ms after it (a lost datagram costs nothing), at least every 100 ms as a heartbeat, and with each batch of motion samples (about 100 a second); a PING goes every second. A phone that hears nothing for 3 s says HELLO again. It sends a new HELLO when its mode changes, and BYE when it disconnects or goes to the background. A phone linked to several games sends each its own session; the games not shown get a released controller as their heartbeat.
 
 ## Host side
 
@@ -111,8 +166,12 @@ The phone sends HELLO every 500 ms until WELCOME comes; the host answers a HELLO
 
 ## Files
 
-- `project.yml`: the xcodegen project. `Support/Signing.xcconfig`: signing defaults.
-- `Sources/App`: the app and its model (`AppModel.swift`: the open games' sessions, joining, switching, pairing). `Sources/Link`: the protocol and its HMACs (`Wire.swift`), the UDP session (`PadLink.swift`), a pairing (`PairAttempt.swift`) and the Bonjour browser. `Sources/Model`: the paired Macs and their games (`PairStore.swift`, keys in the Keychain). `Sources/Input`: the phone's motion and rumble. `Sources/Layout`: where each control goes, for drawing and for touches alike. `Sources/UI`: the screens, the pairing sheet and QR scanner (`PairView.swift`), the drawing, the multi-touch surface and the Wii Menu style (`WiiStyle.swift`).
-- `Resources`: the icon, and the strings in English and Spanish.
-- `tools/pad_listen.py`: the stand-in receiver, pairing included.
+- `project.yml`: the xcodegen project. `Support/Signing.xcconfig`: signing defaults (`Signing.local.xcconfig`, yours, overrides them). The app is in English only.
+- `Sources/App`: the app and its model (`AppModel.swift`: the open games' sessions, joining, switching, pairing).
+- `Sources/Link`: the protocol and its HMACs (`Wire.swift`), the UDP session (`PadLink.swift`), a pairing (`PairAttempt.swift`) and the Bonjour browser (`HostBrowser.swift`).
+- `Sources/Model`: the controller's buttons and modes (`Pad.swift`), the paired Macs and their games (`PairStore.swift`, keys in the Keychain), the settings' keys.
+- `Sources/Input`: the phone's motion and rumble.
+- `Sources/Layout`: where each control goes, for drawing and for touches alike.
+- `Sources/UI`: the games screen (`ConnectView.swift`), the controller (`ControllerScreen.swift`, `PadViews.swift`, `TouchSurface.swift`), the pairing sheet and QR scanner (`PairView.swift`), the menu and settings (`SettingsForm.swift`) and the Wii Menu style (`WiiStyle.swift`, `PadTheme.swift`).
 - `Resources/AppIcon.icon`: the icon, an Icon Composer file (Xcode 26 and later): the Wii U mark full bleed, its U (`Assets/Glyph.svg`, a glass layer) on the mark's blue. Nintendo's mark: fine on your own phone, not for an app published to others.
+- `tools/pad_listen.py`: the stand-in receiver, pairing included.
