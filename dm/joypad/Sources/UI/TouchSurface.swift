@@ -69,6 +69,7 @@ final class TouchSurfaceView: UIView {
 
     private enum Owner {
         case stick(StickGrab)
+        case screen(slot: UInt8, rect: CGRect)
         case keys(Set<PadButton>)
         case action(PadAction, inside: Bool)
     }
@@ -78,6 +79,8 @@ final class TouchSurfaceView: UIView {
     private static let clickPulse: TimeInterval = 0.09
 
     private var owners: [ObjectIdentifier: Owner] = [:]
+    /// The fingers on the touch screen area, by touch.
+    private var screenPoints: [ObjectIdentifier: TouchPoint] = [:]
     private var sticks: [Side: CGVector] = [:]
     private var stickOwner: [Side: ObjectIdentifier] = [:]
     private var lastTap: [Side: TimeInterval] = [:]
@@ -180,6 +183,16 @@ final class TouchSurfaceView: UIView {
                                           noClick: releasing))
             stickOwner[side] = id
             sticks[side] = vector(p, origin: origin, ring: ring)
+        case let .touchScreen(size):
+            // A finger on the Switch's touch screen: the lowest free slot, and where it is on the area
+            let used = Set(screenPoints.values.map(\.id))
+            guard let slot = (0..<UInt8(Wire.maxTouches)).first(where: { !used.contains($0) }) else {
+                owners[id] = .keys([])
+                return
+            }
+            let rect = CGRect(x: c.center.x - size.width / 2, y: c.center.y - size.height / 2, width: size.width, height: size.height)
+            owners[id] = .screen(slot: slot, rect: rect)
+            screenPoints[id] = Self.screenPoint(p, slot: slot, rect: rect)
         case let .zone(zone):
             // A sweeping finger steers the stick from where it landed: full tilt 72 points out at sensitivity 1
             let side = zone.side
@@ -217,6 +230,8 @@ final class TouchSurfaceView: UIView {
             if grab.flipX { v.dx = -v.dx }
             if grab.flipY { v.dy = -v.dy }
             sticks[grab.side] = v
+        case let .screen(slot, rect):
+            screenPoints[id] = Self.screenPoint(p, slot: slot, rect: rect)
         case .keys(let held):
             owners[id] = .keys(layout.keys(at: p, holding: held))
         case let .action(action, _):
@@ -241,9 +256,20 @@ final class TouchSurfaceView: UIView {
             }
         case let .action(action, inside):
             if inside, !cancelled { onAction?(action) }
+        case .screen:
+            screenPoints[id] = nil
         case .keys:
             break
         }
+    }
+
+    /// A point of the touch screen area as the game's screen has it: clamped to the area, so a finger that slides off its edge stays on the screen's.
+    private static func screenPoint(_ p: CGPoint, slot: UInt8, rect: CGRect) -> TouchPoint {
+        func unit(_ v: CGFloat, _ lo: CGFloat, _ len: CGFloat) -> UInt16 {
+            let f = min(max((v - lo) / max(len, 1), 0), 65535.0 / 65536.0)
+            return UInt16(f * 65536)
+        }
+        return TouchPoint(id: slot, x: unit(p.x, rect.minX, rect.width), y: unit(p.y, rect.minY, rect.height))
     }
 
     /// The stick's tilt: full at 80 % of the ring, nothing inside the dead zone, the rest scaled so it starts at 0.
@@ -274,6 +300,7 @@ final class TouchSurfaceView: UIView {
 
     private func releaseAll() {
         owners.removeAll()
+        screenPoints.removeAll()
         sticks.removeAll()
         stickOwner.removeAll()
         pulses.removeAll()
@@ -321,7 +348,8 @@ final class TouchSurfaceView: UIView {
         }
         let frame = InputFrame(buttons: buttons,
                                leftStick: out[.left] ?? .zero,
-                               rightStick: out[.right] ?? .zero)
+                               rightStick: out[.right] ?? .zero,
+                               touches: screenPoints.values.sorted { $0.id < $1.id })
         defer { lastHeld = held }
         guard frame != last else { return }
         if options.pressHaptics, !held.subtracting(lastHeld).isEmpty {

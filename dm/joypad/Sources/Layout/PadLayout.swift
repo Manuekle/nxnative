@@ -99,6 +99,8 @@ struct Control: Identifiable {
         case stick(Side, ring: CGFloat, knob: CGFloat)
         case action(PadAction, radius: CGFloat)
         case zone(Zone)
+        /// The Switch's touch screen on the phone: a 16:9 area, a finger on it at a point is a finger at that point of the game's screen.
+        case touchScreen(CGSize)
     }
 
     let id: String
@@ -116,6 +118,7 @@ struct Control: Identifiable {
         case .stick(_, let ring, _): return CGSize(width: 2 * ring, height: 2 * ring)
         case .action(_, let radius): return CGSize(width: 2 * radius, height: 2 * radius)
         case .zone(let zone): return zone.size
+        case .touchScreen(let size): return size
         }
     }
 
@@ -141,6 +144,8 @@ struct Control: Identifiable {
         case .zone(var zone):
             zone.size = CGSize(width: zone.size.width * k, height: zone.size.height * k)
             c.kind = .zone(zone)
+        case .touchScreen(let size):
+            c.kind = .touchScreen(CGSize(width: size.width * k, height: size.height * k))
         }
         return c
     }
@@ -168,6 +173,8 @@ struct Control: Identifiable {
             return hypot(dx, dy) / radius
         case .zone(let zone):
             return max(abs(dx) / (zone.size.width / 2), abs(dy) / (zone.size.height / 2))
+        case .touchScreen(let size):
+            return max(abs(dx) / (size.width / 2), abs(dy) / (size.height / 2))
         }
     }
 
@@ -178,7 +185,7 @@ struct Control: Identifiable {
         case .cluster: return 1.25
         case .stick: return 1.3
         case .action: return 1.6
-        case .zone: return 1
+        case .zone, .touchScreen: return 1
         }
     }
 
@@ -211,6 +218,19 @@ struct Control: Identifiable {
 
     var isExtra: Bool { id.hasPrefix("extra.") }
     var isZone: Bool { id.hasPrefix("zone.") }
+    var isTouchScreen: Bool { id == "touchscreen" }
+
+    static func makeTouchScreen(size: CGSize, at p: CGPoint) -> Control {
+        Control(id: "touchscreen", kind: .touchScreen(size), center: p, side: .left)
+    }
+
+    /// Whether a touch on this control may be taken only when no other control wants it (a camera area, the touch screen).
+    var isBackdrop: Bool {
+        switch kind {
+        case .zone, .touchScreen: return true
+        default: return false
+        }
+    }
 }
 
 /// One Joy-Con's shell: its rect, its corners and its coloured rail strip, in screen points.
@@ -260,8 +280,12 @@ struct PadLayout {
     /// next open game, beside the menu's wherever that is now.
     func customized(_ profile: PadProfile, size: CGSize, editing: Bool = false, switcher: Bool = false) -> PadLayout {
         guard !controls.isEmpty else { return self }
-        // Camera areas lie under everything
-        var all: [Control] = profile.zones.map {
+        // Camera areas and the touch screen lie under everything
+        var all: [Control] = []
+        if profile.touchScreen {
+            all.append(.makeTouchScreen(size: CGSize(width: 240 * unit, height: 135 * unit), at: CGPoint(x: size.width / 2, y: size.height * 0.5)))
+        }
+        all += profile.zones.map {
             .makeZone($0, size: CGSize(width: 220 * unit, height: 150 * unit), at: CGPoint(x: size.width * 0.72, y: size.height * 0.36))
         }
         all += controls
@@ -340,7 +364,7 @@ struct PadLayout {
             case .key(let b, _, _): out.append(b)
             case .cluster(let cluster): out.append(contentsOf: cluster.keys)
             case .stick(let side, _, _): out.append(side == .left ? .ls : .rs)
-            case .action, .zone: break
+            case .action, .zone, .touchScreen: break
             }
         }
         return out
@@ -350,9 +374,9 @@ struct PadLayout {
     func control(at p: CGPoint) -> Control? {
         var best: Control?
         var bestScore = CGFloat.infinity
-        // A camera area takes only the touches nothing else does
+        // A camera area or the touch screen takes only the touches nothing else does
         for c in controls {
-            if case .zone = c.kind { continue }
+            if c.isBackdrop { continue }
             let s = c.score(p)
             if s <= c.slop, s < bestScore {
                 best = c
@@ -360,8 +384,8 @@ struct PadLayout {
             }
         }
         if best == nil {
-            for c in controls {
-                guard case .zone = c.kind else { continue }
+            for c in controls.reversed() {   // the area drawn last lies on top
+                guard c.isBackdrop else { continue }
                 let s = c.score(p)
                 if s <= c.slop, s < bestScore {
                     best = c
@@ -382,7 +406,7 @@ struct PadLayout {
             switch c.kind {
             case .key(let b, _, _): held = holding.contains(b)
             case .cluster(let cluster): held = !holding.isDisjoint(with: cluster.keys)
-            case .stick, .action, .zone: continue
+            case .stick, .action, .zone, .touchScreen: continue
             }
             let s = c.score(p)
             if s <= c.slop + (held ? 0.2 : 0), s < bestScore {
@@ -394,7 +418,7 @@ struct PadLayout {
         switch c.kind {
         case .key(let b, _, _): return [b]
         case .cluster(let cluster): return cluster.keys(at: p, center: c.center)
-        case .stick, .action, .zone: return []
+        case .stick, .action, .zone, .touchScreen: return []
         }
     }
 

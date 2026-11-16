@@ -70,6 +70,12 @@ final class PadLink: @unchecked Sendable {
     private var hotUntil: UInt64 = 0
     private var rumbleAt: UInt64 = 0
     private var rumbling = false
+    /// The fingers on the touch screen area, and whether the host takes them (its WELCOME says so).
+    private var touches: [TouchPoint] = []
+    private var sentTouches: [TouchPoint]?
+    private var hostTakesTouch = false
+    private var touchHotUntil: UInt64 = 0
+    private var lastTouchSend: UInt64 = 0
 
     init() {
         clientID = PairStore.clientID
@@ -121,6 +127,8 @@ final class PadLink: @unchecked Sendable {
             sides = newSides
             snapshot = PadSnapshot()
             sent = nil
+            touches = []
+            sentTouches = nil
             guard connection != nil else { return }
             welcomed = false
             set(.waiting)
@@ -142,6 +150,16 @@ final class PadLink: @unchecked Sendable {
             if let newHost { hostID = newHost }
             guard connection != nil, !welcomed, ready else { return }
             sendHello(now())
+        }
+    }
+
+    /// The fingers on the touch screen area, the whole set. They are sent again for a moment after a change and every 100 ms
+    /// while any is down, so a datagram lost never leaves a finger stuck on the game's screen.
+    func pushTouches(_ points: [TouchPoint]) {
+        queue.async { [self] in
+            guard points != touches else { return }
+            touches = points
+            if welcomed, hostTakesTouch { sendTouches(now()) }
         }
     }
 
@@ -234,12 +252,15 @@ final class PadLink: @unchecked Sendable {
         case .welcome(let welcome):
             let first = !welcomed
             welcomed = true
+            hostTakesTouch = Wire.Features(rawValue: welcome.flags).contains(.touch)
             challenge = nil
             set(.connected)
             post(.welcome(welcome))
             if first {
                 sent = nil
                 sendInput(t)
+                sentTouches = nil
+                if hostTakesTouch, !touches.isEmpty { sendTouches(t) }
             }
         case .rumble(let motors):
             rumbleAt = t
@@ -299,6 +320,9 @@ final class PadLink: @unchecked Sendable {
         if !samples.isEmpty || t < hotUntil || t - lastSend >= Self.heartbeatNs {
             sendInput(t, motion: samples)
         }
+        if hostTakesTouch, t < touchHotUntil || (!touches.isEmpty && t - lastTouchSend >= Self.heartbeatNs) {
+            sendTouches(t)
+        }
         if t - lastPing >= Self.pingEveryNs {
             lastPing = t
             send(Wire.ping(seq: nextSeq(), nowNs: t))
@@ -319,6 +343,13 @@ final class PadLink: @unchecked Sendable {
         send(Wire.input(seq: nextSeq(), nowNs: t, sides: sides, snapshot: snapshot, motion: samples))
         sent = snapshot
         lastSend = t
+    }
+
+    private func sendTouches(_ t: UInt64) {
+        if touches != sentTouches { touchHotUntil = t + Self.repeatAfterChangeNs }
+        send(Wire.touch(seq: nextSeq(), points: touches))
+        sentTouches = touches
+        lastTouchSend = t
     }
 
     private func send(_ data: Data) {
@@ -342,6 +373,9 @@ final class PadLink: @unchecked Sendable {
         welcomed = false
         sent = nil
         snapshot = PadSnapshot()
+        touches = []
+        sentTouches = nil
+        hostTakesTouch = false
         if rumbling {
             rumbling = false
             onRumble?(.silent)

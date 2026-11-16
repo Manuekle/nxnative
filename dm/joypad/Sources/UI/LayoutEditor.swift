@@ -159,6 +159,12 @@ struct LayoutEditor: View {
                     Button("Camera area") {
                         selection = profile.addZone()
                     }
+                    if !profile.touchScreen {
+                        Button("Touch screen") {
+                            profile.touchScreen = true
+                            selection = "touchscreen"
+                        }
+                    }
                     Divider()
                     ForEach(addable, id: \.self) { button in
                         Button(addTitle(button)) {
@@ -212,7 +218,16 @@ struct LayoutEditor: View {
                 .foregroundStyle(Wii.textStrong)
                 .lineLimit(1)
             Spacer()
-            if control.isZone {
+            if control.isTouchScreen {
+                Button(role: .destructive) {
+                    profile.touchScreen = false
+                    profile.controls["touchscreen"] = nil
+                    selection = nil
+                } label: {
+                    Label("Remove", systemImage: "trash.fill")
+                }
+                .font(.system(size: 13, weight: .semibold))
+            } else if control.isZone {
                 Button(role: .destructive) {
                     profile.removeZone(control.id)
                     selection = nil
@@ -259,6 +274,12 @@ struct LayoutEditor: View {
         }
         if control.isZone {
             zoneInspector(control)
+        }
+        if control.isTouchScreen {
+            Text("The game's touch screen: a finger here touches the same place on the game's screen. It needs a game from a nxnative that takes it, and the area lies under the other controls.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Wii.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
         let keys = lockable(control)
         if keys.count == 1, let button = keys.first {
@@ -579,7 +600,7 @@ struct LayoutEditor: View {
         switch control.kind {
         case .key(let button, _, _): return [button]
         case .cluster(let cluster): return cluster.keys
-        case .stick, .action, .zone: return []
+        case .stick, .action, .zone, .touchScreen: return []
         }
     }
 
@@ -625,6 +646,8 @@ extension Control {
             return side == .left ? String(localized: "Left stick") : String(localized: "Right stick")
         case .zone:
             return String(localized: "Camera area")
+        case .touchScreen:
+            return String(localized: "Touch screen")
         case .action(let action, _):
             return action == .menu ? String(localized: "Menu") : String(localized: "Switch game")
         }

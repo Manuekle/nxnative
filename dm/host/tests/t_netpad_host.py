@@ -19,7 +19,7 @@ import tempfile
 import urllib.parse
 
 MAGIC, VERSION = 0x4450584E, 2
-HELLO, INPUT, PING, PAIR = 0x01, 0x02, 0x04, 0x05
+HELLO, INPUT, PING, PAIR, TOUCH = 0x01, 0x02, 0x04, 0x05, 0x06
 WELCOME, PONG, KICK, PAIRED, CHALLENGE = 0x81, 0x84, 0x85, 0x86, 0x87
 HEADER = struct.Struct('<IBBHI')
 
@@ -77,7 +77,21 @@ class Phone:
         again = self.recv(CHALLENGE)
         assert again[8:24] == chal
         self.hello(sides, mac(key, b'NXPD hello', host, self.client, chal + bytes([sides])))
-        return self.recv(WELCOME)[0]
+        self.welcome = self.recv(WELCOME)
+        return self.welcome[0]
+
+
+def touch_line(proc):
+    """What the receiver handed the game's touch screen next ("2 0:0.500,0.250 1:..."): the test front end prints each dm_touch_set."""
+    while True:
+        line = proc.stderr.readline()
+        assert line, 'the receiver ended'
+        if line.startswith('[test] touch '):
+            return line[len('[test] touch '):].strip()
+
+
+def finger(slot, x, y):
+    return struct.pack('<BHH', slot, x, y)
 
 
 def start(binary, folder, pair):
@@ -129,6 +143,16 @@ def main():
             assert a.join(host, key) == 0, 'the paired phone is not player 1'
             a.send(PING, struct.pack('<Q', 12345))
             assert struct.unpack('<Q', a.recv(PONG)[:8])[0] == 12345
+
+            # The touch area: WELCOME says this host takes it, the fingers go to the game's touch screen as a set, an empty set lifts them, and a phone that goes
+            # takes its fingers with it
+            assert a.welcome[3] & 4, 'WELCOME does not say the host takes TOUCH'
+            a.send(TOUCH, bytes([2]) + finger(0, 0x8000, 0x4000) + finger(3, 0, 0xFFFF))
+            assert touch_line(p) == '2 0:0.500,0.250 3:0.000,1.000'
+            a.send(TOUCH, bytes([1]) + finger(0, 0x8000, 0x4000))
+            assert touch_line(p) == '1 0:0.500,0.250'
+            a.send(TOUCH, bytes([0]))
+            assert touch_line(p) == '0'
 
             # A second phone, by the QR code's token: the code changed with the first pairing, the token too
             p.stdout.close()

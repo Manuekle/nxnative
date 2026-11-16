@@ -205,6 +205,8 @@ struct PadProfile: Codable, Hashable {
     /// The phone's motion as a stick; nil is off.
     var gyro: GyroRule?
     var zones: [ZoneSpec] = []
+    /// The layout has an area that is the Switch's touch screen: fingers on it touch the game's screen.
+    var touchScreen = false
     /// The buttons that beat while held: let go and pressed again ten times a second (a locked one does it until the next tap).
     var turbo: Set<PadButton> = []
     /// The shift key, if the layout has one.
@@ -224,10 +226,11 @@ struct PadProfile: Codable, Hashable {
         zones = try c.decodeIfPresent([ZoneSpec].self, forKey: .zones) ?? []
         turbo = try c.decodeIfPresent(Set<PadButton>.self, forKey: .turbo) ?? []
         shift = try c.decodeIfPresent(ShiftSpec.self, forKey: .shift)
+        touchScreen = try c.decodeIfPresent(Bool.self, forKey: .touchScreen) ?? false
         combos = try c.decodeIfPresent([String: Set<PadButton>].self, forKey: .combos) ?? [:]
     }
 
-    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty && turbo.isEmpty && combos.isEmpty && shift == nil }
+    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty && gyro == nil && zones.isEmpty && turbo.isEmpty && combos.isEmpty && shift == nil && !touchScreen }
 
     func also(_ button: PadButton) -> Set<PadButton> { combos[button.rawValue] ?? [] }
 

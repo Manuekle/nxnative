@@ -17,6 +17,7 @@ enum Wire {
         case bye = 0x03
         case ping = 0x04
         case pair = 0x05
+        case touch = 0x06
         // host to phone
         case welcome = 0x81
         case rumble = 0x82
@@ -36,7 +37,11 @@ enum Wire {
         let rawValue: UInt8
         static let motion = Features(rawValue: 1 << 0)
         static let rumble = Features(rawValue: 1 << 1)
+        /// In WELCOME's flags: the host takes TOUCH.
+        static let touch = Features(rawValue: 1 << 2)
     }
+
+    static let maxTouches = 10
 
     enum KickReason: UInt8 {
         case full = 1
@@ -128,6 +133,19 @@ enum Wire {
         return w.data
     }
 
+    /// TOUCH: the whole set of fingers down (none: all lifted), each a slot and a point of the touch screen area.
+    static func touch(seq: UInt32, points: [TouchPoint]) -> Data {
+        var w = WireWriter(kind: .touch, seq: seq)
+        let sent = points.prefix(maxTouches)
+        w.u8(UInt8(sent.count))
+        for p in sent {
+            w.u8(p.id & 15)
+            w.u16(p.x)
+            w.u16(p.y)
+        }
+        return w.data
+    }
+
     static func ping(seq: UInt32, nowNs: UInt64) -> Data {
         var w = WireWriter(kind: .ping, seq: seq)
         w.u64(nowNs)
@@ -175,7 +193,7 @@ enum Wire {
         case .challenge:
             guard let host = r.u64(), let nonce = r.bytes(16) else { return nil }
             return .challenge(host: host, nonce: nonce)
-        case .hello, .input, .bye, .ping, .pair:
+        case .hello, .input, .bye, .ping, .pair, .touch:
             return nil
         }
     }

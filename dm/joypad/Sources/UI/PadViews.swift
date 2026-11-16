@@ -64,11 +64,42 @@ struct ControlView: View {
                       value: side == .left ? frame.leftStick : frame.rightStick,
                       clicked: frame.buttons.contains(side == .left ? .ls : .rs),
                       accent: theme.accent(side), theme: theme)
+        case let .touchScreen(size):
+            TouchScreenView(size: size, touches: frame.touches, theme: theme)
         case let .zone(zone):
             ZoneView(size: zone.size, active: (zone.rightStick ? frame.rightStick : frame.leftStick) != .zero, theme: theme)
         case let .action(action, radius):
             MenuButtonView(radius: radius, theme: theme, symbol: action == .switchGame ? "arrow.left.arrow.right" : "gearshape.fill")
         }
+    }
+}
+
+/// The Switch's touch screen on the phone: a faint 16:9 pad, with a dot under each finger.
+struct TouchScreenView: View {
+    let size: CGSize
+    let touches: [TouchPoint]
+    let theme: PadTheme
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: min(size.width, size.height) * 0.08, style: .continuous)
+        let ink = theme.light ? Wii.blueText : Color.white
+        let active = !touches.isEmpty
+        shape
+            .fill(ink.opacity(active ? 0.2 : 0.07))
+            .overlay(shape.strokeBorder(ink.opacity(active ? 0.7 : 0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
+            .overlay(Image(systemName: "rectangle.and.hand.point.up.left.fill")
+                .font(.system(size: min(size.width, size.height) * 0.3, weight: .semibold))
+                .foregroundStyle(ink.opacity(active ? 0.45 : 0.28)))
+            .overlay(alignment: .topLeading) {
+                ForEach(touches, id: \.id) { t in
+                    Circle()
+                        .fill(ink.opacity(0.85))
+                        .frame(width: 18, height: 18)
+                        .position(x: CGFloat(t.x) / 65536 * size.width, y: CGFloat(t.y) / 65536 * size.height)
+                }
+            }
+            .frame(width: size.width, height: size.height)
+            .animation(.easeOut(duration: 0.08), value: active)
     }
 }
 

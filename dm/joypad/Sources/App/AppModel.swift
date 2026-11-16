@@ -316,6 +316,7 @@ final class AppModel {
         frame = out
         guard !offline, let active else { return }
         active.link.push(Self.snapshot(of: out, mode: mode))
+        active.link.pushTouches(out.touches)
     }
 
     /// The layout's motion rule, or nil to turn it off. Motion is read while the controller shows, even with a rule on
@@ -520,6 +521,7 @@ final class AppModel {
         guard let s = sessions.first(where: { $0.id == id }) else { return }
         if let old = active, old.id != id {
             old.link.push(PadSnapshot())
+            old.link.pushTouches([])
             old.link.setMotion(nil)
             old.shown.withLock { $0 = false }
             rumble.play(.silent)

@@ -86,4 +86,14 @@ struct InputFrame: Equatable, Sendable {
     var buttons: Set<PadButton> = []
     var leftStick: CGVector = .zero
     var rightStick: CGVector = .zero
+    /// The fingers on the touch screen area, if the layout has one.
+    var touches: [TouchPoint] = []
+}
+
+/// A finger on the touch screen area: its slot and where it is on the Switch's screen, 65536 to the whole width or height, from
+/// the top left.
+struct TouchPoint: Equatable, Sendable {
+    var id: UInt8
+    var x: UInt16
+    var y: UInt16
 }

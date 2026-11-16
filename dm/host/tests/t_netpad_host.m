@@ -7,6 +7,7 @@
 #include "../pad_net_apple.h"
 #include "../pad_net_panel_mac.h"
 #include "../dm.h"
+#include "../front.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -14,6 +15,11 @@
 uint64_t now_ns(void) { return clock_gettime_nsec_np(CLOCK_UPTIME_RAW); }
 void dm_joy_attach(int player, uint32_t sides) { (void)player; (void)sides; }
 void dm_joy_set(int player, int side, uint64_t buttons, int32_t x, int32_t y) { (void)player; (void)side; (void)buttons; (void)x; (void)y; }
+void dm_touch_set(const dm_touch *t, int n) {   // the game's touch screen: what it was handed, one line to stderr (t_netpad_host.py reads them)
+    fprintf(stderr, "[test] touch %d", n);
+    for (int i = 0; i < n; i++) fprintf(stderr, " %u:%.3f,%.3f", t[i].id, t[i].x, t[i].y);
+    fprintf(stderr, "\n"); fflush(stderr);
+}
 void dm_motion_clear_hid(int player) { (void)player; }
 void dm_motion_clear_joy(int player, int side) { (void)player; (void)side; }
 void dm_motion_set_hid(int player, const float acc[3], const float rot[3], uint64_t t) { (void)player; (void)acc; (void)rot; (void)t; }

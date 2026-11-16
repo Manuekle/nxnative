@@ -4,7 +4,8 @@
 //
 // Every datagram is little endian and starts with a 12-byte header: the magic "NXPD", the version, the kind, two reserved bytes and the sender's sequence number. The phone sends
 // PAIR (the code or the QR code's token the Mac shows proves it is in front of it), HELLO (its client ID, which Joy-Cons it stands for, its name, and its answer to the host's
-// CHALLENGE), INPUT (each Joy-Con's NpadButtons and stick, Home and Capture, up to four six-axis samples), PING and BYE; the host answers PAIRED, CHALLENGE, WELCOME (the player,
+// CHALLENGE), INPUT (each Joy-Con's NpadButtons and stick, Home and Capture, up to four six-axis samples), TOUCH (the fingers on the phone's touch area, for a game that reads
+// the Switch's touch screen), PING and BYE; the host answers PAIRED, CHALLENGE, WELCOME (the player,
 // the player lights, the game's name), RUMBLE (what each Joy-Con plays), LIGHTS, PONG and KICK. A phone's values are a real Joy-Con's: buttons as jc1_joy_buttons gives them,
 // sticks in the upright Joy-Con's frame (y up), samples in its upright frame (x right, y toward the top, z out of the face; the gravity direction in G and rad/s), so a pad of
 // them takes the same path as the original Joy-Cons read from HID (pad_jc1.h, pad_jc1_mac.h).
@@ -33,10 +34,12 @@ enum {
     NXPD_HEADER = 12,
     NXPD_SAMPLES = 4,
     NXPD_NAME = 32,
-    NXPD_HELLO = 0x01, NXPD_INPUT = 0x02, NXPD_BYE = 0x03, NXPD_PING = 0x04, NXPD_PAIR = 0x05,
+    NXPD_HELLO = 0x01, NXPD_INPUT = 0x02, NXPD_BYE = 0x03, NXPD_PING = 0x04, NXPD_PAIR = 0x05, NXPD_TOUCH = 0x06,
     NXPD_WELCOME = 0x81, NXPD_RUMBLE = 0x82, NXPD_LIGHTS = 0x83, NXPD_PONG = 0x84, NXPD_KICK = 0x85, NXPD_PAIRED = 0x86, NXPD_CHALLENGE = 0x87,
     NXPD_DEVICE_JOYCON = 1,
     NXPD_FEATURE_MOTION = 1, NXPD_FEATURE_RUMBLE = 2,
+    NXPD_FEATURE_TOUCH = 4,   // in WELCOME's flags: this host takes TOUCH (a host from before it does not, and the phone sends none)
+    NXPD_TOUCHES = 10,        // fingers one TOUCH carries (a phone's screen takes five)
     NXPD_EXTRA_HOME = 1, NXPD_EXTRA_CAPTURE = 2,
     NXPD_KICK_FULL = 1, NXPD_KICK_CLOSING = 2, NXPD_KICK_UNSUPPORTED = 3, NXPD_KICK_NOT_PAIRED = 4,
     NXPD_NO_PLAYER = 0xFF,   // WELCOME's player while the phone waits for its first button press (DM_PAD_PRESS_TO_JOIN)
@@ -68,8 +71,11 @@ typedef struct {
     int samples;                    // the valid samples in s, oldest first (a sample out of bounds or not finite is left out)
     nxpd_sample s[NXPD_SAMPLES];
 } nxpd_input;
+typedef struct { uint8_t id; float x, y; } nxpd_touch;   // id: the finger's slot 0-15; x and y on the touch area, [0,1) from the top left
+typedef struct { int n; nxpd_touch t[NXPD_TOUCHES]; } nxpd_touches;   // the whole set of fingers down; n = 0: all lifted
 typedef struct {
     uint8_t kind; uint32_t seq;
+    nxpd_touches touch;             // NXPD_TOUCH
     nxpd_hello hello;               // NXPD_HELLO
     nxpd_pair pair;                 // NXPD_PAIR
     nxpd_input input;               // NXPD_INPUT
@@ -149,6 +155,20 @@ static inline int nxpd_parse(const uint8_t *b, size_t n, nxpd_msg *m) {
             if (nxpd_sample_ok(&s)) in->s[in->samples++] = s;
         }
         return in->sides != 0;
+    }
+    case NXPD_TOUCH: {   // a count, then for each finger its slot (one byte) and x and y (16 bits each, 65536 to the whole area)
+        if (len < 1) return 0;
+        size_t count = p[0];
+        if (count > NXPD_TOUCHES || 1 + 5 * count > len) return 0;
+        uint32_t used = 0;
+        for (size_t i = 0; i < count; i++) {
+            const uint8_t *q = p + 1 + 5 * i; uint8_t id = q[0] & 15;
+            if (used >> id & 1) continue;   // a slot twice: the first counts
+            used |= 1u << id;
+            nxpd_touch *t = &m->touch.t[m->touch.n++];
+            t->id = id; t->x = (float)nxpd_u16(q + 1) / 65536.f; t->y = (float)nxpd_u16(q + 3) / 65536.f;
+        }
+        return 1;
     }
     case NXPD_PING:
         if (len < 8) return 0;

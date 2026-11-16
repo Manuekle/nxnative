@@ -4,6 +4,7 @@
 #import "pad_net_apple.h"
 #include "pad_net.h"
 #include "dm.h"
+#include "front.h"   // dm_touch_set
 #include <dns_sd.h>
 #include <sys/socket.h>
 #include <sys/stat.h>
@@ -36,6 +37,7 @@ typedef struct net_client {
     int player;                      // the player last told (WELCOME, dm_joy_attach); -1 none
     uint8_t told_sides;              // the Joy-Cons last given to the npad layer
     int rumble_off;                  // silent RUMBLE packets still to send after a buzz
+    int touching;                    // fingers of its touch area handed to the game now (dm_touch_set)
     uint64_t packets, samples, logged;
 } net_client;
 
@@ -111,7 +113,7 @@ static void np_joy_release(int pl, int side) { if (g_joy && pl >= 0) { dm_joy_se
 
 static void np_welcome(net_client *c) {
     int pl = np_player(&c->pad); uint8_t b[NXPD_HEADER + 5 + 255];
-    np_send_to(c, b, nxpd_welcome(b, np_seq(), pl, c->pad.sides, nxpd_player_lights(pl), NXPD_FEATURE_MOTION | NXPD_FEATURE_RUMBLE, g_title));
+    np_send_to(c, b, nxpd_welcome(b, np_seq(), pl, c->pad.sides, nxpd_player_lights(pl), NXPD_FEATURE_MOTION | NXPD_FEATURE_RUMBLE | NXPD_FEATURE_TOUCH, g_title));
 }
 // After a HELLO or the front end's read(): the pad's player (a first press may have given it one) and its Joy-Cons, to the npad layer and, when the player changed, to the phone.
 // Returns whether a WELCOME went out
@@ -134,6 +136,12 @@ static void np_rumble_timer_sync(void) {
     g_rumble_on = g_pads != NULL;
     if (g_rumble_on) dispatch_resume(g_rumble); else dispatch_suspend(g_rumble);
 }
+// The phone's fingers off the game's touch screen (it went, lost focus or has no player): none stays down
+static void np_touch_lift(net_client *c) {
+    if (!c->touching) return;
+    c->touching = 0;
+    dm_touch_set(NULL, 0);
+}
 static void np_unlink(net_client *c) {
     net_pad **link = &g_pads; while (*link && *link != &c->pad) link = &(*link)->next;
     if (*link) *link = c->pad.next;
@@ -142,6 +150,7 @@ static void np_unlink(net_client *c) {
 static void np_remove(net_client *c, const char *why) {
     np_unlink(c);
     int pl = c->player;
+    np_touch_lift(c);
     if (pl >= 0) { if (g_joy) { np_joy_release(pl, 0); np_joy_release(pl, 1); dm_joy_attach(pl, 0); } dm_motion_clear_hid(pl); }
     LOG("[nxpad] '%s' %s", c->pad.name, why);
     if (g_front.detach) g_front.detach(&c->pad);
@@ -381,6 +390,18 @@ static void np_input(net_client *c, const nxpd_msg *m) {
     }
 }
 
+// The fingers of the phone's touch area: the whole set goes to the game's touch screen, as the Mac's mouse and the iPhone's own screen do. Only a phone with a player
+// touches, and not while the game takes no controller input
+static void np_touch(net_client *c, const nxpd_msg *m) {
+    if (c->seq_ok && !nxpd_seq_newer(m->seq, c->seq)) return;
+    c->seq = m->seq; c->seq_ok = 1;
+    if (np_player(&c->pad) < 0 || np_blocked()) { np_touch_lift(c); return; }
+    dm_touch t[NXPD_TOUCHES];
+    for (int i = 0; i < m->touch.n; i++) { t[i].id = m->touch.t[i].id; t[i].x = m->touch.t[i].x; t[i].y = m->touch.t[i].y; }
+    dm_touch_set(t, m->touch.n);
+    c->touching = m->touch.n;
+}
+
 static void np_receive(void) {
     for (int i = 0; i < 64; i++) {   // what is queued, a bounded batch at a time
         uint8_t b[512]; struct sockaddr_storage from; socklen_t flen = sizeof from;
@@ -395,6 +416,7 @@ static void np_receive(void) {
         net_client *c = np_at(&from); if (!c) continue;   // a phone this run has not welcomed (the game started again): it says HELLO once it hears nothing back
         c->heard = now_ns(); c->packets++;
         if (m.kind == NXPD_INPUT) np_input(c, &m);
+        else if (m.kind == NXPD_TOUCH) np_touch(c, &m);
         else if (m.kind == NXPD_PING) { uint8_t r[NXPD_HEADER + 8]; np_send_to(c, r, nxpd_pong(r, np_seq(), m.ping)); }
         else if (m.kind == NXPD_BYE) np_remove(c, "disconnected");
     }
@@ -450,7 +472,7 @@ void dm_netpad_ab(const net_pad *p, int *a, int *b) {
 }
 void dm_netpad_active(int on) {
     g_active = on;
-    if (!on) for (net_pad *p = g_pads; p; p = p->next) { int pl = np_player(p); if (pl >= 0) { dm_motion_clear_hid(pl); np_joy_release(pl, 0); np_joy_release(pl, 1); } }
+    if (!on) for (net_pad *p = g_pads; p; p = p->next) { np_touch_lift(np_client(p)); int pl = np_player(p); if (pl >= 0) { dm_motion_clear_hid(pl); np_joy_release(pl, 0); np_joy_release(pl, 1); } }
 }
 
 // ---- Socket and Bonjour ----

@@ -77,6 +77,25 @@ int main(void) {
     n = input(b, 12, 3, 0, 0, 0, 0, 0, 0, 0, 2, s);
     assert(nxpd_parse(b, n - 1, &m) && m.input.samples == 1);   // the second one did not fully come
 
+    // TOUCH: the whole set of fingers, each a slot and a point of the area (65536 to the whole), a slot twice counted once, none: all lifted
+    n = header(b, NXPD_TOUCH, 20); b[n++] = 3;
+    b[n++] = 0; nxpd_put16(b + n, 0x8000); nxpd_put16(b + n + 2, 0x4000); n += 4;
+    b[n++] = 17; nxpd_put16(b + n, 0xFFFF); nxpd_put16(b + n + 2, 0); n += 4;   // slot 17 is 1: only 16 slots
+    b[n++] = 1; nxpd_put16(b + n, 1); nxpd_put16(b + n + 2, 2); n += 4;           // slot 1 again
+    assert(nxpd_parse(b, n, &m) && m.kind == NXPD_TOUCH && m.seq == 20 && m.touch.n == 2);
+    assert(m.touch.t[0].id == 0 && m.touch.t[0].x == 0.5f && m.touch.t[0].y == 0.25f);
+    assert(m.touch.t[1].id == 1 && m.touch.t[1].x < 1.f && m.touch.t[1].x > 0.9999f && m.touch.t[1].y == 0.f);
+    n = header(b, NXPD_TOUCH, 21); b[n++] = 0;
+    assert(nxpd_parse(b, n, &m) && m.kind == NXPD_TOUCH && m.touch.n == 0);   // all lifted
+    assert(!nxpd_parse(b, NXPD_HEADER, &m));                                      // no count
+    n = header(b, NXPD_TOUCH, 22); b[n++] = 2; memset(b + n, 0, 5); n += 5;
+    assert(!nxpd_parse(b, n, &m));                                                // a count beyond the datagram
+    n = header(b, NXPD_TOUCH, 23); b[n++] = NXPD_TOUCHES + 1; memset(b + n, 0, 5 * (NXPD_TOUCHES + 1)); n += 5 * (NXPD_TOUCHES + 1);
+    assert(!nxpd_parse(b, n, &m));                                                // more fingers than a TOUCH carries
+    uint8_t w[NXPD_HEADER + 5 + 255];
+    nxpd_welcome(w, 1, 0, 3, 1, NXPD_FEATURE_MOTION | NXPD_FEATURE_TOUCH, "g");
+    assert(w[NXPD_HEADER + 3] == (NXPD_FEATURE_MOTION | NXPD_FEATURE_TOUCH));      // WELCOME tells the phone this host takes TOUCH
+
     // PING and BYE
     n = header(b, NXPD_PING, 13); nxpd_put64(b + n, 0xabcdefull); n += 8;
     assert(nxpd_parse(b, n, &m) && m.kind == NXPD_PING && m.ping == 0xabcdefull);

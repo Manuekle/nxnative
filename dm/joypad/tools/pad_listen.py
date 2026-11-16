@@ -3,7 +3,7 @@
 
 It advertises _nxpad._udp with macOS's dns-sd as a game on a Mac of its own, keeps its pairing window open (it prints the six digits
 and the link the Mac's QR code carries), pairs phones, welcomes a paired one as player 1 after it answers the challenge, answers its
-pings and prints what it holds on one line: each Joy-Con's buttons and stick, Home and Capture, and the newest motion sample.
+pings and prints what it holds on one line: each Joy-Con's buttons and stick, Home and Capture, and the newest motion sample, and a line for every change of the fingers on the touch screen area.
 
     python3 dm/joypad/tools/pad_listen.py [--port 48620] [--title "Test game"] [--rumble] [--state FILE]
 
@@ -26,7 +26,7 @@ import time
 import urllib.parse
 
 MAGIC, VERSION = 0x4450584E, 2
-HELLO, INPUT, BYE, PING, PAIR = 0x01, 0x02, 0x03, 0x04, 0x05
+HELLO, INPUT, BYE, PING, PAIR, TOUCH = 0x01, 0x02, 0x03, 0x04, 0x05, 0x06
 WELCOME, RUMBLE, LIGHTS, PONG, KICK, PAIRED, CHALLENGE = 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87
 KICK_CLOSING, KICK_NOT_PAIRED = 2, 4
 PAIR_CODE, PAIR_QR = 1, 2
@@ -206,7 +206,7 @@ def main():
                                 print(f'\nhello from "{name}" at {addr[0]}:{addr[1]}: sides {sides:02b}, device {device}, '
                                       f'features {features:02b}')
                             peer, last_heard = addr, now
-                            send(WELCOME, struct.pack('<BBBB', 0, sides, LIGHTS_P1, 0b11) + string(args.title))
+                            send(WELCOME, struct.pack('<BBBB', 0, sides, LIGHTS_P1, 0b111) + string(args.title))
                             continue
                         if not chal:
                             chal = challenges[client] = (secrets.token_bytes(16), now + 10)
@@ -227,6 +227,13 @@ def main():
                             line.append(f'acc ({ax:+.2f},{ay:+.2f},{az:+.2f}) gyro ({gx:+.2f},{gy:+.2f},{gz:+.2f}) {age} us old')
                         sys.stdout.write('\r' + '  '.join(line)[:170].ljust(170))
                         sys.stdout.flush()
+                    elif kind == TOUCH and addr == peer and len(body) >= 1:
+                        last_heard = now
+                        count = body[0]
+                        if len(body) >= 1 + 5 * count:
+                            fingers = [struct.unpack_from('<BHH', body, 1 + 5 * i) for i in range(count)]
+                            shown = ' '.join(f'{i}:({x / 65536:.3f},{y / 65536:.3f})' for i, x, y in fingers)
+                            print(f'\ntouch {count}: {shown}' if count else '\ntouch: lifted')
                     elif kind == PING and addr == peer:
                         last_heard = now
                         send(PONG, body[:8])
