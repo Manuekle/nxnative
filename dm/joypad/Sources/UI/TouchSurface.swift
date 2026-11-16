@@ -60,8 +60,11 @@ final class TouchSurfaceView: UIView {
         var travel: CGFloat
         /// The second touch of a double tap: the stick stays clicked while it lasts.
         let held: Bool
-        /// The touch that lets a locked tilt go: it clicks nothing.
-        var releasing = false
+        /// The touch that lets a locked tilt go, or sweeps a camera area: it clicks nothing.
+        var noClick = false
+        /// A camera area can turn an axis round.
+        var flipX = false
+        var flipY = false
     }
 
     private enum Owner {
@@ -171,9 +174,20 @@ final class TouchSurfaceView: UIView {
             let held = lastTap[side].map { t.timestamp - $0 < Self.doubleTapWindow } ?? false
             let releasing = (layout.stickRules[side]?.locksTilt ?? false) && (sticks[side] ?? .zero) != .zero
             owners[id] = .stick(StickGrab(side: side, origin: origin, ring: ring, began: t.timestamp, travel: 0, held: held,
-                                          releasing: releasing))
+                                          noClick: releasing))
             stickOwner[side] = id
             sticks[side] = vector(p, origin: origin, ring: ring)
+        case let .zone(zone):
+            // A sweeping finger steers the stick from where it landed: full tilt 72 points out at sensitivity 1
+            let side = zone.side
+            guard stickOwner[side] == nil else {
+                owners[id] = .keys([])
+                return
+            }
+            owners[id] = .stick(StickGrab(side: side, origin: p, ring: 90 / max(zone.sensitivity, 0.1), began: t.timestamp,
+                                          travel: 0, held: false, noClick: true, flipX: zone.invertX, flipY: zone.invertY))
+            stickOwner[side] = id
+            sticks[side] = .zero
         case let .action(action, _):
             owners[id] = .action(action, inside: true)
         case .key, .cluster:
@@ -196,7 +210,10 @@ final class TouchSurfaceView: UIView {
         case .stick(var grab):
             grab.travel = max(grab.travel, hypot(p.x - grab.origin.x, p.y - grab.origin.y))
             owners[id] = .stick(grab)
-            sticks[grab.side] = vector(p, origin: grab.origin, ring: grab.ring)
+            var v = vector(p, origin: grab.origin, ring: grab.ring)
+            if grab.flipX { v.dx = -v.dx }
+            if grab.flipY { v.dy = -v.dy }
+            sticks[grab.side] = v
         case .keys(let held):
             owners[id] = .keys(layout.keys(at: p, holding: held))
         case let .action(action, _):
@@ -215,7 +232,7 @@ final class TouchSurfaceView: UIView {
             if cancelled || !(layout.stickRules[grab.side]?.locksTilt ?? false) || !tilted { sticks[grab.side] = .zero }
             if stickOwner[grab.side] == id { stickOwner[grab.side] = nil }
             // A short tap that hardly moves clicks the stick; touching it again right after holds the click.
-            if !cancelled, !grab.held, !grab.releasing, t.timestamp - grab.began < Self.tapMaxDuration, grab.travel < grab.ring * 0.25 {
+            if !cancelled, !grab.held, !grab.noClick, t.timestamp - grab.began < Self.tapMaxDuration, grab.travel < grab.ring * 0.25 {
                 pulse(grab.side == .left ? .ls : .rs)
                 lastTap[grab.side] = t.timestamp
             }

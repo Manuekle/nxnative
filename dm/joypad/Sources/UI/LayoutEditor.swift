@@ -30,6 +30,8 @@ struct LayoutEditor: View {
     }
 
     private static let panelWidth: CGFloat = 292
+    /// The selection that stands for the phone's motion, which is no control on the screen.
+    private static let gyroID = "gyro"
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -135,10 +137,12 @@ struct LayoutEditor: View {
             Divider()
             ScrollView {
                 VStack(alignment: .leading, spacing: 9) {
-                    if let control = selected {
+                    if selection == Self.gyroID {
+                        gyroInspector
+                    } else if let control = selected {
                         inspector(control)
                     } else {
-                        Text("Drag a control to move it. Tap one to resize it, hide it, or change how it works: a button can lock (a tap holds it down until the next tap), a stick can press buttons, like pushing up to accelerate.")
+                        Text("Drag a control to move it. Tap one to resize it, hide it, or change how it works: a button can lock (a tap holds it down until the next tap), a stick can press buttons, like pushing up to accelerate. Motion moves a stick with the phone itself.")
                             .font(.system(size: 12, weight: .medium))
                             .foregroundStyle(Wii.muted)
                             .fixedSize(horizontal: false, vertical: true)
@@ -152,6 +156,10 @@ struct LayoutEditor: View {
 
             HStack {
                 Menu {
+                    Button("Camera area") {
+                        selection = profile.addZone()
+                    }
+                    Divider()
                     ForEach(addable, id: \.self) { button in
                         Button(addTitle(button)) {
                             selection = profile.addExtra(button)
@@ -161,6 +169,14 @@ struct LayoutEditor: View {
                     Label("Add a button", systemImage: "plus.circle.fill")
                         .font(.system(size: 14, weight: .semibold))
                 }
+                Spacer()
+                Button {
+                    selection = Self.gyroID
+                } label: {
+                    Label("Motion", systemImage: "gyroscope")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .accessibilityAddTraits(profile.gyro != nil ? .isSelected : [])
                 Spacer()
                 Button("Reset", role: .destructive) { confirmReset = true }
                     .font(.system(size: 14, weight: .semibold))
@@ -196,7 +212,15 @@ struct LayoutEditor: View {
                 .foregroundStyle(Wii.textStrong)
                 .lineLimit(1)
             Spacer()
-            if control.isExtra {
+            if control.isZone {
+                Button(role: .destructive) {
+                    profile.removeZone(control.id)
+                    selection = nil
+                } label: {
+                    Label("Remove", systemImage: "trash.fill")
+                }
+                .font(.system(size: 13, weight: .semibold))
+            } else if control.isExtra {
                 Button(role: .destructive) {
                     profile.locked.subtract(lockable(control).filter { button in !stillDrawn(button, without: control.id) })
                     profile.removeExtra(control.id)
@@ -233,6 +257,9 @@ struct LayoutEditor: View {
         if case .stick = control.kind {
             stickInspector(control)
         }
+        if control.isZone {
+            zoneInspector(control)
+        }
         let keys = lockable(control)
         if keys.count == 1, let button = keys.first {
             Toggle(isOn: lockBinding(button)) {
@@ -261,6 +288,97 @@ struct LayoutEditor: View {
                     .accessibilityAddTraits(on ? .isSelected : [])
                 }
             }
+        }
+    }
+
+    // MARK: Camera area and motion
+
+    private func zoneBinding(_ id: String) -> Binding<ZoneSpec> {
+        Binding(get: { profile.zones.first { $0.id == id } ?? ZoneSpec(id: id) }, set: { new in
+            if let i = profile.zones.firstIndex(where: { $0.id == id }) { profile.zones[i] = new }
+        })
+    }
+
+    /// A finger sweeping in the area steers a stick, from where it lands.
+    @ViewBuilder
+    private func zoneInspector(_ control: Control) -> some View {
+        let zone = zoneBinding(control.id)
+        Picker("Steers", selection: zone.rightStick) {
+            Text("Left stick").tag(false)
+            Text("Right stick").tag(true)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        sensitivityRow(zone.sensitivity, range: ZoneSpec.sensitivityRange)
+        VStack(spacing: 4) {
+            Toggle("Flip side to side", isOn: zone.invertX)
+            Toggle("Flip up and down", isOn: zone.invertY)
+        }
+        .font(.system(size: 12, weight: .medium))
+        .foregroundStyle(Wii.text)
+        Text("A finger sweeping here steers the stick from where it lands. Anything else on the area still takes its own touches.")
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(Wii.muted)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func sensitivityRow(_ value: Binding<Double>, range: ClosedRange<Double>) -> some View {
+        HStack(spacing: 10) {
+            Text("Speed")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Wii.text)
+            Slider(value: Binding(get: { value.wrappedValue }, set: { value.wrappedValue = ($0 * 20).rounded() / 20 }), in: range)
+            Text(value.wrappedValue, format: .number.precision(.fractionLength(2)))
+                .font(.system(size: 12, weight: .semibold).monospacedDigit())
+                .foregroundStyle(Wii.blueText)
+                .frame(width: 42, alignment: .trailing)
+        }
+    }
+
+    /// The phone's own motion as a stick: it does not belong to a control on the screen.
+    @ViewBuilder
+    private var gyroInspector: some View {
+        let on = Binding(get: { profile.gyro != nil }, set: { profile.gyro = $0 ? GyroRule() : nil })
+        Toggle(isOn: on) {
+            Label("Move a stick with the phone", systemImage: "gyroscope")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Wii.textStrong)
+        }
+        if let current = profile.gyro {
+            let rule = Binding(get: { current }, set: { profile.gyro = $0 })
+            Picker("Motion", selection: rule.mode) {
+                Text("Steering wheel").tag(GyroRule.Mode.wheel)
+                Text("Aim").tag(GyroRule.Mode.aim)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            Picker("Stick", selection: rule.rightStick) {
+                Text("Left stick").tag(false)
+                Text("Right stick").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            sensitivityRow(rule.sensitivity, range: GyroRule.sensitivityRange)
+            VStack(spacing: 4) {
+                Toggle("Flip side to side", isOn: rule.invertX)
+                if current.mode == .aim { Toggle("Flip up and down", isOn: rule.invertY) }
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(Wii.text)
+            HStack {
+                Text("Only while holding")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(Wii.text)
+                Spacer()
+                directionMenu("Hold", systemImage: "hand.tap.fill", selection: rule.holdButton)
+                    .frame(width: 100)
+            }
+            Text(current.mode == .wheel
+                 ? "Turn the phone like a steering wheel: straight is where you hold it when you close this panel (or when the button goes down)."
+                 : "How fast you turn the phone is how far the stick goes, so the camera follows where it points.")
+                .font(.system(size: 11, weight: .medium))
+                .foregroundStyle(Wii.muted)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
@@ -329,7 +447,7 @@ struct LayoutEditor: View {
         switch control.kind {
         case .key(let button, _, _): return [button]
         case .cluster(let cluster): return cluster.keys
-        case .stick, .action: return []
+        case .stick, .action, .zone: return []
         }
     }
 
@@ -367,6 +485,8 @@ extension Control {
         case .stick(let side, _, _):
             guard mode == .pair else { return String(localized: "Stick") }
             return side == .left ? String(localized: "Left stick") : String(localized: "Right stick")
+        case .zone:
+            return String(localized: "Camera area")
         case .action(let action, _):
             return action == .menu ? String(localized: "Menu") : String(localized: "Switch game")
         }

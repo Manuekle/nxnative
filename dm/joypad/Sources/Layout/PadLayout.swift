@@ -81,12 +81,24 @@ struct Cluster {
     }
 }
 
+/// A part of the screen where a sweeping finger steers a stick from where it lands (PadProfile.zones).
+struct Zone: Hashable {
+    var rightStick: Bool
+    var size: CGSize
+    var sensitivity: CGFloat
+    var invertX: Bool
+    var invertY: Bool
+
+    var side: Side { rightStick ? .right : .left }
+}
+
 struct Control: Identifiable {
     enum Kind {
         case key(PadButton, KeyShape, KeyLabel)
         case cluster(Cluster)
         case stick(Side, ring: CGFloat, knob: CGFloat)
         case action(PadAction, radius: CGFloat)
+        case zone(Zone)
     }
 
     let id: String
@@ -103,6 +115,7 @@ struct Control: Identifiable {
         case .cluster(let cluster): return CGSize(width: 2 * cluster.reach, height: 2 * cluster.reach)
         case .stick(_, let ring, _): return CGSize(width: 2 * ring, height: 2 * ring)
         case .action(_, let radius): return CGSize(width: 2 * radius, height: 2 * radius)
+        case .zone(let zone): return zone.size
         }
     }
 
@@ -125,6 +138,9 @@ struct Control: Identifiable {
             c.kind = .stick(side, ring: ring * k, knob: knob * k)
         case let .action(action, radius):
             c.kind = .action(action, radius: radius * k)
+        case .zone(var zone):
+            zone.size = CGSize(width: zone.size.width * k, height: zone.size.height * k)
+            c.kind = .zone(zone)
         }
         return c
     }
@@ -150,6 +166,8 @@ struct Control: Identifiable {
             return hypot(dx, dy) / ring
         case .action(_, let radius):
             return hypot(dx, dy) / radius
+        case .zone(let zone):
+            return max(abs(dx) / (zone.size.width / 2), abs(dy) / (zone.size.height / 2))
         }
     }
 
@@ -160,6 +178,7 @@ struct Control: Identifiable {
         case .cluster: return 1.25
         case .stick: return 1.3
         case .action: return 1.6
+        case .zone: return 1
         }
     }
 
@@ -184,7 +203,14 @@ struct Control: Identifiable {
         Control(id: extra.id, kind: .key(extra.button, .circle(radius), label), center: p, side: extra.button.side)
     }
 
+    static func makeZone(_ spec: ZoneSpec, size: CGSize, at p: CGPoint) -> Control {
+        let zone = Zone(rightStick: spec.rightStick, size: size, sensitivity: CGFloat(spec.sensitivity),
+                        invertX: spec.invertX, invertY: spec.invertY)
+        return Control(id: spec.id, kind: .zone(zone), center: p, side: zone.side)
+    }
+
     var isExtra: Bool { id.hasPrefix("extra.") }
+    var isZone: Bool { id.hasPrefix("zone.") }
 }
 
 /// One Joy-Con's shell: its rect, its corners and its coloured rail strip, in screen points.
@@ -230,7 +256,11 @@ struct PadLayout {
     /// next open game, beside the menu's wherever that is now.
     func customized(_ profile: PadProfile, size: CGSize, editing: Bool = false, switcher: Bool = false) -> PadLayout {
         guard !controls.isEmpty else { return self }
-        var all = controls
+        // Camera areas lie under everything
+        var all: [Control] = profile.zones.map {
+            .makeZone($0, size: CGSize(width: 220 * unit, height: 150 * unit), at: CGPoint(x: size.width * 0.72, y: size.height * 0.36))
+        }
+        all += controls
         for extra in profile.extras {
             all.append(.makeExtra(extra, radius: 26 * unit, label: label(for: extra.button),
                                   at: CGPoint(x: size.width / 2, y: size.height / 2)))
@@ -301,7 +331,7 @@ struct PadLayout {
             case .key(let b, _, _): out.append(b)
             case .cluster(let cluster): out.append(contentsOf: cluster.keys)
             case .stick(let side, _, _): out.append(side == .left ? .ls : .rs)
-            case .action: break
+            case .action, .zone: break
             }
         }
         return out
@@ -311,11 +341,23 @@ struct PadLayout {
     func control(at p: CGPoint) -> Control? {
         var best: Control?
         var bestScore = CGFloat.infinity
+        // A camera area takes only the touches nothing else does
         for c in controls {
+            if case .zone = c.kind { continue }
             let s = c.score(p)
             if s <= c.slop, s < bestScore {
                 best = c
                 bestScore = s
+            }
+        }
+        if best == nil {
+            for c in controls {
+                guard case .zone = c.kind else { continue }
+                let s = c.score(p)
+                if s <= c.slop, s < bestScore {
+                    best = c
+                    bestScore = s
+                }
             }
         }
         return best
@@ -331,7 +373,7 @@ struct PadLayout {
             switch c.kind {
             case .key(let b, _, _): held = holding.contains(b)
             case .cluster(let cluster): held = !holding.isDisjoint(with: cluster.keys)
-            case .stick, .action: continue
+            case .stick, .action, .zone: continue
             }
             let s = c.score(p)
             if s <= c.slop + (held ? 0.2 : 0), s < bestScore {
@@ -343,7 +385,7 @@ struct PadLayout {
         switch c.kind {
         case .key(let b, _, _): return [b]
         case .cluster(let cluster): return cluster.keys(at: p, center: c.center)
-        case .stick, .action: return []
+        case .stick, .action, .zone: return []
         }
     }
 

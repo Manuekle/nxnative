@@ -18,6 +18,7 @@ final class MotionSource: @unchecked Sendable {
     private var pending: [MotionSample] = []
     private var orientation = UIInterfaceOrientation.landscapeRight.rawValue
     private var mode: PadMode = .pair
+    private var latest: (gravity: SIMD3<Float>, rate: SIMD3<Float>)?
     // Main actor only.
     private var running = false
 
@@ -37,7 +38,10 @@ final class MotionSource: @unchecked Sendable {
         guard running else { return }
         running = false
         manager.stopDeviceMotionUpdates()
-        lock.withLock { pending.removeAll() }
+        lock.withLock {
+            pending.removeAll()
+            latest = nil
+        }
     }
 
     func setOrientation(_ o: UIInterfaceOrientation) {
@@ -46,6 +50,12 @@ final class MotionSource: @unchecked Sendable {
 
     func setMode(_ m: PadMode) {
         lock.withLock { mode = m }
+    }
+
+    /// The newest reading in the picture's frame (x right, y up, z out of the screen), for a stick the player steers with
+    /// the phone: nil before the first one or after stop().
+    func picture() -> (gravity: SIMD3<Float>, rate: SIMD3<Float>)? {
+        lock.withLock { latest }
     }
 
     /// The samples since the last call, the newest `max` of them.
@@ -68,8 +78,11 @@ final class MotionSource: @unchecked Sendable {
         let time = UInt64(max(0, m.timestamp) * 1_000_000_000)
         lock.lock()
         defer { lock.unlock() }
-        let a = Self.pictureToJoyCon(Self.phoneToPicture(acc, orientation), mode)
-        let w = Self.pictureToJoyCon(Self.phoneToPicture(rot, orientation), mode)
+        let pictureAcc = Self.phoneToPicture(acc, orientation)
+        let pictureRot = Self.phoneToPicture(rot, orientation)
+        latest = (pictureAcc, pictureRot)
+        let a = Self.pictureToJoyCon(pictureAcc, mode)
+        let w = Self.pictureToJoyCon(pictureRot, mode)
         pending.append(MotionSample(timeNs: time, acc: a, rot: w))
         if pending.count > 16 { pending.removeFirst(pending.count - 16) }
     }

@@ -82,6 +82,14 @@ final class AppModel {
     private let motion = MotionSource()
     private let rumble = RumblePlayer()
     @ObservationIgnored private var motionWanted = true
+    /// What the fingers hold, before the phone's motion is mixed in (`frame` is what the game gets).
+    @ObservationIgnored private var touchFrame = InputFrame()
+    /// The phone's motion as a stick, when the layout has one (PadProfile.gyro).
+    @ObservationIgnored private var gyro: GyroRule?
+    /// The wheel angle that counts as straight; nil takes the next reading.
+    @ObservationIgnored private var gyroCenter: Float?
+    @ObservationIgnored private var gyroEngaged = false
+    @ObservationIgnored private var gyroTask: Task<Void, Never>?
     @ObservationIgnored private var suspended = false
     @ObservationIgnored private var offlineLights: UInt8 = 0
     /// Games the player left (Back to games): not joined by themselves again until they close and open again.
@@ -170,6 +178,7 @@ final class AppModel {
         offline = true
         self.mode = mode
         offlineLights = Self.defaultLights(0)
+        touchFrame = InputFrame()
         frame = InputFrame()
         motion.setMode(mode)
         rumble.setMode(mode)
@@ -182,6 +191,7 @@ final class AppModel {
         endAllSessions()
         offline = false
         suspended = false
+        touchFrame = InputFrame()
         frame = InputFrame()
         screen = .connect
         motion.stop()
@@ -301,15 +311,75 @@ final class AppModel {
     // MARK: While playing
 
     func update(_ newFrame: InputFrame) {
-        frame = newFrame
+        touchFrame = newFrame
+        let out = mixed(newFrame)
+        frame = out
         guard !offline, let active else { return }
-        active.link.push(Self.snapshot(of: newFrame, mode: mode))
+        active.link.push(Self.snapshot(of: out, mode: mode))
+    }
+
+    /// The layout's motion rule, or nil to turn it off. Motion is read while the controller shows, even with a rule on
+    /// and "Send the phone's gyro" off: that one is only about what the game receives.
+    func setGyro(_ rule: GyroRule?) {
+        guard rule != gyro else { return }
+        gyro = rule
+        gyroCenter = nil
+        gyroEngaged = false
+        updateMotion()
+        update(touchFrame)
+    }
+
+    /// Takes the phone's position now as straight, for a wheel.
+    func recenterGyro() { gyroCenter = nil }
+
+    /// The fingers' frame with the phone's motion added to the stick it moves.
+    private func mixed(_ f: InputFrame) -> InputFrame {
+        guard let rule = gyro else { return f }
+        let engaged = rule.holdButton.map { f.buttons.contains($0) } ?? true
+        defer { gyroEngaged = engaged }
+        guard engaged, let m = motion.picture() else { return f }
+        // A wheel with a hold button takes its straight where the phone is when the button goes down
+        if gyroCenter == nil || (!gyroEngaged && rule.holdButton != nil) {
+            gyroCenter = GyroMath.wheelAngle(gravity: m.gravity)
+        }
+        let g = GyroMath.stick(rule, gravity: m.gravity, rate: m.rate, center: gyroCenter ?? 0)
+        func add(_ a: CGVector) -> CGVector {
+            let x = a.dx + g.dx, y = a.dy + g.dy
+            let len = hypot(x, y)
+            return len > 1 ? CGVector(dx: x / len, dy: y / len) : CGVector(dx: x, dy: y)
+        }
+        var out = f
+        if rule.rightStick { out.rightStick = add(f.rightStick) } else { out.leftStick = add(f.leftStick) }
+        return out
+    }
+
+    /// Re-mixes the motion about 60 times a second while a rule is on, and sends what changed.
+    private func updateGyroPump() {
+        let wanted = gyro != nil && screen == .controller && !suspended
+        if wanted, gyroTask == nil {
+            gyroTask = Task { @MainActor [weak self] in
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 16_000_000)
+                    guard let self else { return }
+                    let out = self.mixed(self.touchFrame)
+                    guard out != self.frame else { continue }
+                    self.frame = out
+                    if !self.offline, let active = self.active {
+                        active.link.push(Self.snapshot(of: out, mode: self.mode))
+                    }
+                }
+            }
+        } else if !wanted {
+            gyroTask?.cancel()
+            gyroTask = nil
+        }
     }
 
     func setMode(_ newMode: PadMode) {
         guard newMode != mode else { return }
         mode = newMode
         UserDefaults.standard.set(newMode.rawValue, forKey: SettingsKey.mode)
+        touchFrame = InputFrame()
         frame = InputFrame()
         motion.setMode(newMode)
         rumble.setMode(newMode)
@@ -325,6 +395,7 @@ final class AppModel {
 
     func setMotion(enabled: Bool) {
         motionWanted = enabled
+        active?.link.setMotion(enabled ? motion : nil)
         updateMotion()
     }
 
@@ -456,7 +527,8 @@ final class AppModel {
         activeID = id
         offline = false
         s.shown.withLock { $0 = true }
-        s.link.setMotion(motion)
+        s.link.setMotion(motionWanted ? motion : nil)
+        touchFrame = InputFrame()
         frame = InputFrame()
         mode = s.mode
         motion.setMode(mode)
@@ -501,12 +573,14 @@ final class AppModel {
     }
 
     private func updateMotion() {
-        // Only a game on the other end reads the phone's motion.
-        if motionWanted, screen == .controller, !offline, !suspended, active != nil {
+        // Only a game on the other end reads the phone's motion, and a stick the phone moves reads it here
+        let game = motionWanted && !offline && active != nil
+        if screen == .controller, !suspended, game || gyro != nil {
             motion.start()
         } else {
             motion.stop()
         }
+        updateGyroPump()
     }
 
     private func showNotice(_ text: String) {

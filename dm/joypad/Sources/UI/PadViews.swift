@@ -64,9 +64,31 @@ struct ControlView: View {
                       value: side == .left ? frame.leftStick : frame.rightStick,
                       clicked: frame.buttons.contains(side == .left ? .ls : .rs),
                       accent: theme.accent(side), theme: theme)
+        case let .zone(zone):
+            ZoneView(size: zone.size, active: (zone.rightStick ? frame.rightStick : frame.leftStick) != .zero, theme: theme)
         case let .action(action, radius):
             MenuButtonView(radius: radius, theme: theme, symbol: action == .switchGame ? "arrow.left.arrow.right" : "gearshape.fill")
         }
+    }
+}
+
+/// A camera area: a faint pad that lights while a finger steers from it.
+struct ZoneView: View {
+    let size: CGSize
+    let active: Bool
+    let theme: PadTheme
+
+    var body: some View {
+        let shape = RoundedRectangle(cornerRadius: min(size.width, size.height) * 0.14, style: .continuous)
+        let ink = theme.light ? Wii.blueText : Color.white
+        shape
+            .fill(ink.opacity(active ? 0.22 : 0.08))
+            .overlay(shape.strokeBorder(ink.opacity(active ? 0.7 : 0.3), style: StrokeStyle(lineWidth: 1.5, dash: [6, 5])))
+            .overlay(Image(systemName: "hand.draw.fill")
+                .font(.system(size: min(size.width, size.height) * 0.26, weight: .semibold))
+                .foregroundStyle(ink.opacity(active ? 0.7 : 0.3)))
+            .frame(width: size.width, height: size.height)
+            .animation(.easeOut(duration: 0.08), value: active)
     }
 }
 

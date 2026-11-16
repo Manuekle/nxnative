@@ -77,6 +77,10 @@ struct ControllerScreen: View {
         // Another game or another way of holding the phone: the layout on the screen is no longer the one being edited
         .onChange(of: model.activeID) { _, _ in editing = nil }
         .onChange(of: model.mode) { _, _ in editing = nil }
+        // The phone's motion as a stick, off while the layout is being edited
+        .onChange(of: editing == nil ? model.layouts.profile(game: model.layoutGame, mode: model.mode).gyro : nil, initial: true) { _, rule in
+            model.setGyro(rule)
+        }
         .onChange(of: motion, initial: true) { _, on in
             model.setMotion(enabled: on)
         }
