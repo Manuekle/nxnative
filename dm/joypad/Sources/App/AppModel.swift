@@ -77,6 +77,8 @@ final class AppModel {
 
     let browser = HostBrowser()
     let store = PairStore()
+    /// The layouts the player made, for every game and for single ones.
+    let layouts = LayoutStore()
     private let motion = MotionSource()
     private let rumble = RumblePlayer()
     @ObservationIgnored private var motionWanted = true
@@ -104,6 +106,8 @@ final class AppModel {
     var latencyMs: Int? { active?.latencyMs }
     var hostLabel: String { active?.macName ?? "" }
     var gameTitle: String { active?.title ?? "" }
+    /// The game whose own layout the controller shows, when it has one (none in the offline test).
+    var layoutGame: String? { offline ? nil : active?.gameKey }
 
     var statusText: String {
         if offline { return String(localized: "Offline test") }

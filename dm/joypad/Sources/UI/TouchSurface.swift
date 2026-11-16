@@ -15,6 +15,8 @@ struct TouchOptions: Equatable {
 struct TouchSurface: UIViewRepresentable {
     let layout: PadLayout
     let options: TouchOptions
+    /// The controller is covered (its menu is open) or the app is not in front: everything is let go, locked buttons too.
+    var paused = false
     let onFrame: (InputFrame) -> Void
     let onAction: (PadAction) -> Void
     let onOrientation: (UIInterfaceOrientation) -> Void
@@ -29,6 +31,7 @@ struct TouchSurface: UIViewRepresentable {
         view.onOrientation = onOrientation
         view.options = options
         view.layout = layout
+        view.paused = paused
     }
 }
 
@@ -40,6 +43,11 @@ final class TouchSurfaceView: UIView {
         }
     }
     var options = TouchOptions()
+    var paused = false {
+        didSet {
+            if paused, !oldValue { releaseAll() }
+        }
+    }
     var onFrame: ((InputFrame) -> Void)?
     var onAction: ((PadAction) -> Void)?
     var onOrientation: ((UIInterfaceOrientation) -> Void)?
@@ -69,6 +77,9 @@ final class TouchSurfaceView: UIView {
     private var stickOwner: [Side: ObjectIdentifier] = [:]
     private var lastTap: [Side: TimeInterval] = [:]
     private var pulses: [PadButton: CFTimeInterval] = [:]
+    /// The locking buttons held down now (PadLayout.locking): a touch that begins on one turns it on or off; a finger that
+    /// slides onto one, or stays on it, does nothing.
+    private var latched: Set<PadButton> = []
     private var last = InputFrame()
     private var lastOrientation = UIInterfaceOrientation.unknown
     private lazy var feedback = UIImpactFeedbackGenerator(style: .light, view: self)
@@ -162,7 +173,14 @@ final class TouchSurfaceView: UIView {
         case let .action(action, _):
             owners[id] = .action(action, inside: true)
         case .key, .cluster:
-            owners[id] = .keys(layout.keys(at: p, holding: []))
+            let keys = layout.keys(at: p, holding: [])
+            let locks = keys.intersection(layout.locking)
+            if !locks.isEmpty {
+                // Letting go makes no new press for publish() to tap the Taptic Engine for
+                if options.pressHaptics, !locks.isDisjoint(with: latched) { feedback.impactOccurred(intensity: 0.5) }
+                latched.formSymmetricDifference(locks)
+            }
+            owners[id] = .keys(keys)
         }
     }
 
@@ -233,6 +251,7 @@ final class TouchSurfaceView: UIView {
         sticks.removeAll()
         stickOwner.removeAll()
         pulses.removeAll()
+        latched.removeAll()
         // Not during SwiftUI's update of this view: the frame goes to observed state.
         Task { @MainActor [weak self] in self?.publish() }
     }
@@ -240,11 +259,13 @@ final class TouchSurfaceView: UIView {
     private func publish() {
         var buttons = Set<PadButton>()
         for owner in owners.values {
-            switch owner {
-            case .keys(let keys): buttons.formUnion(keys)
-            case .stick(let grab): if grab.held { buttons.insert(grab.side == .left ? .ls : .rs) }
-            case .action: break
-            }
+            if case .keys(let keys) = owner { buttons.formUnion(keys) }
+        }
+        // A locking button is down while latched, whatever the fingers on its key do
+        buttons.subtract(layout.locking)
+        buttons.formUnion(latched)
+        for owner in owners.values {
+            if case .stick(let grab) = owner, grab.held { buttons.insert(grab.side == .left ? .ls : .rs) }
         }
         buttons.formUnion(pulses.keys)
         let frame = InputFrame(buttons: buttons,

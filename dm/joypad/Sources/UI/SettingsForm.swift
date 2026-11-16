@@ -199,6 +199,8 @@ struct MenuSheet: View {
     @Environment(AppModel.self) private var model
     @Environment(\.dismiss) private var dismiss
     @AppStorage(SettingsKey.mode) private var storedMode = PadMode.pair
+    /// Closes the menu and opens the layout editor on the controller.
+    var onCustomize: () -> Void = {}
 
     var body: some View {
         NavigationStack {
@@ -269,6 +271,25 @@ struct MenuSheet: View {
                         }
                     }
                     .pickerStyle(.segmented)
+                    Button {
+                        dismiss()
+                        onCustomize()
+                    } label: {
+                        HStack {
+                            WiiRowLabel("Customize the layout")
+                            Spacer()
+                            if let game = model.layoutGame, model.layouts.hasOwn(game: game, mode: model.mode) {
+                                Text("This game's own").font(.system(size: 14)).foregroundStyle(Wii.muted)
+                            } else if !model.layouts.profile(game: nil, mode: model.mode).isEmpty {
+                                Text("Customized").font(.system(size: 14)).foregroundStyle(Wii.muted)
+                            }
+                            Image(systemName: "slider.horizontal.3")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundStyle(Wii.blue)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     NavigationLink {
                         SettingsForm()
                     } label: {
@@ -276,6 +297,9 @@ struct MenuSheet: View {
                     }
                 } header: {
                     WiiSectionHeader("Controller")
+                } footer: {
+                    Text("Move, resize or hide any control, add buttons, and make one lock: a tap holds it down until the next tap. A game can keep a layout of its own.")
+                        .foregroundStyle(Wii.muted)
                 }
                 .listRowBackground(Color.white)
 

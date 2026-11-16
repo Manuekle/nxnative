@@ -25,7 +25,7 @@ enum PadMode: String, CaseIterable, Identifiable, Sendable {
 }
 
 /// A Joy-Con (Switch 1) button. Each one belongs to one Joy-Con, the way the hardware reports it.
-enum PadButton: String, CaseIterable, Hashable, Sendable {
+enum PadButton: String, CaseIterable, Hashable, Codable, Sendable {
     case a, b, x, y
     case ls, rs
     case l, r, zl, zr

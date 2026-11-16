@@ -39,7 +39,8 @@ struct PadControlsView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             ForEach(layout.controls) { control in
-                ControlView(control: control, theme: theme, frame: frame)
+                ControlView(control: control, theme: theme, frame: frame, locking: layout.locking)
+                    .opacity(control.hidden ? 0.3 : 1)
                     .position(control.center)
             }
         }
@@ -50,13 +51,14 @@ struct ControlView: View {
     let control: Control
     let theme: PadTheme
     let frame: InputFrame
+    var locking: Set<PadButton> = []
 
     var body: some View {
         switch control.kind {
         case let .key(button, shape, label):
-            KeyView(shape: shape, label: label, pressed: frame.buttons.contains(button), theme: theme)
+            KeyView(shape: shape, label: label, pressed: frame.buttons.contains(button), theme: theme, locks: locking.contains(button))
         case let .cluster(cluster):
-            ClusterView(cluster: cluster, pressed: frame.buttons, theme: theme)
+            ClusterView(cluster: cluster, pressed: frame.buttons, theme: theme, locking: locking)
         case let .stick(side, ring, knob):
             StickView(ring: ring, knob: knob,
                       value: side == .left ? frame.leftStick : frame.rightStick,
@@ -73,6 +75,8 @@ struct KeyView: View {
     let label: KeyLabel
     let pressed: Bool
     let theme: PadTheme
+    /// A button that locks (PadLayout.locking): a small padlock on its rim, closed while it is held down.
+    var locks = false
 
     var body: some View {
         let size = shape.size
@@ -90,9 +94,24 @@ struct KeyView: View {
                 .shadow(color: pressed && theme.light ? Color(red: 0, green: 60 / 255, blue: 100 / 255).opacity(0.35) : .clear, radius: 0, y: 1)
         }
         .frame(width: size.width, height: size.height)
+        .overlay(alignment: .topTrailing) {
+            if locks { lockBadge(min(size.width, size.height)) }
+        }
         .background(outline.stroke(pressed && theme.light ? Wii.blueSoft : .clear, lineWidth: 8))
         .scaleEffect(pressed ? 0.93 : 1)
         .animation(.easeOut(duration: 0.06), value: pressed)
+    }
+
+    private func lockBadge(_ side: CGFloat) -> some View {
+        let d = min(max(side * 0.36, 13), 20)
+        return Image(systemName: pressed ? "lock.fill" : "lock.open.fill")
+            .font(.system(size: d * 0.5, weight: .bold))
+            .foregroundStyle(pressed ? Color.white : (theme.light ? Wii.blueText : theme.label))
+            .frame(width: d, height: d)
+            .background(Circle().fill(pressed ? AnyShapeStyle(theme.light ? Wii.blueDark : Color(hex: 0x5A5E68))
+                                              : AnyShapeStyle(theme.light ? Color.white : Color(hex: 0x1C1D21))))
+            .overlay(Circle().stroke(pressed ? theme.keyPressedEdge : theme.keyEdge, lineWidth: 1))
+            .offset(x: d * 0.18, y: -d * 0.18)
     }
 
     private var outline: AnyShape {
@@ -127,12 +146,13 @@ struct ClusterView: View {
     let cluster: Cluster
     let pressed: Set<PadButton>
     let theme: PadTheme
+    var locking: Set<PadButton> = []
 
     var body: some View {
         ZStack {
             ForEach(0..<4, id: \.self) { i in
                 KeyView(shape: .circle(cluster.keyRadius), label: cluster.labels[i],
-                        pressed: pressed.contains(cluster.keys[i]), theme: theme)
+                        pressed: pressed.contains(cluster.keys[i]), theme: theme, locks: locking.contains(cluster.keys[i]))
                     .offset(x: Cluster.offsets[i].dx * cluster.gap, y: Cluster.offsets[i].dy * cluster.gap)
             }
         }

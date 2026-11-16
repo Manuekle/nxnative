@@ -9,6 +9,25 @@ enum PadAction: Hashable {
 enum KeyLabel: Hashable {
     case text(String)
     case symbol(String)
+
+    /// The key's name in words, for a list.
+    var title: String {
+        switch self {
+        case .text(let text): return text
+        case .symbol(let name):
+            switch name {
+            case "arrowtriangle.up.fill": return String(localized: "Up")
+            case "arrowtriangle.right.fill": return String(localized: "Right")
+            case "arrowtriangle.down.fill": return String(localized: "Down")
+            case "arrowtriangle.left.fill": return String(localized: "Left")
+            case "plus": return "+"
+            case "minus": return "−"
+            case "house.fill": return String(localized: "Home")
+            case "circle.fill": return String(localized: "Capture")
+            default: return name
+            }
+        }
+    }
 }
 
 enum KeyShape {
@@ -21,6 +40,14 @@ enum KeyShape {
         case .circle(let r): return CGSize(width: 2 * r, height: 2 * r)
         case .capsule(let s): return s
         case .square(let s): return CGSize(width: s, height: s)
+        }
+    }
+
+    func scaled(by k: CGFloat) -> KeyShape {
+        switch self {
+        case .circle(let r): return .circle(r * k)
+        case .capsule(let s): return .capsule(CGSize(width: s.width * k, height: s.height * k))
+        case .square(let s): return .square(s * k)
         }
     }
 }
@@ -63,9 +90,44 @@ struct Control: Identifiable {
     }
 
     let id: String
-    let kind: Kind
-    let center: CGPoint
+    var kind: Kind
+    var center: CGPoint
     let side: Side
+    /// Hidden by the player: only the layout editor still lists it, to bring it back.
+    var hidden = false
+
+    /// The box around the control.
+    var extent: CGSize {
+        switch kind {
+        case .key(_, let shape, _): return shape.size
+        case .cluster(let cluster): return CGSize(width: 2 * cluster.reach, height: 2 * cluster.reach)
+        case .stick(_, let ring, _): return CGSize(width: 2 * ring, height: 2 * ring)
+        case .action(_, let radius): return CGSize(width: 2 * radius, height: 2 * radius)
+        }
+    }
+
+    /// The menu button stays on the screen whatever the player does: it is the way back out.
+    var canHide: Bool {
+        if case .action = kind { return false }
+        return true
+    }
+
+    func scaled(by k: CGFloat) -> Control {
+        var c = self
+        switch kind {
+        case let .key(button, shape, label):
+            c.kind = .key(button, shape.scaled(by: k), label)
+        case .cluster(var cluster):
+            cluster.gap *= k
+            cluster.keyRadius *= k
+            c.kind = .cluster(cluster)
+        case let .stick(side, ring, knob):
+            c.kind = .stick(side, ring: ring * k, knob: knob * k)
+        case let .action(action, radius):
+            c.kind = .action(action, radius: radius * k)
+        }
+        return c
+    }
 
     /// How far a point is from the control, in units of its size: 0 at the centre, 1 on its edge.
     func score(_ p: CGPoint) -> CGFloat {
@@ -116,6 +178,13 @@ struct Control: Identifiable {
     static func makeAction(_ action: PadAction, radius: CGFloat, side: Side, at p: CGPoint) -> Control {
         Control(id: "action.\(action)", kind: .action(action, radius: radius), center: p, side: side)
     }
+
+    /// A key the player added (PadProfile.extras).
+    static func makeExtra(_ extra: ExtraKey, radius: CGFloat, label: KeyLabel, at p: CGPoint) -> Control {
+        Control(id: extra.id, kind: .key(extra.button, .circle(radius), label), center: p, side: extra.button.side)
+    }
+
+    var isExtra: Bool { id.hasPrefix("extra.") }
 }
 
 /// One Joy-Con's shell: its rect, its corners and its coloured rail strip, in screen points.
@@ -130,30 +199,107 @@ struct BodyPiece: Identifiable {
 /// Where everything goes for a mode and a screen. The drawing and the touch surface both read it, so what you see
 /// is what you press.
 struct PadLayout {
-    let key: String
+    var key: String
     let mode: PadMode
     let bodies: [BodyPiece]
-    let controls: [Control]
+    var controls: [Control]
     let statusCenter: CGPoint
     let statusWidth: CGFloat
     let lightsCenter: CGPoint
+    /// Points per design unit (the size a key the player adds starts from).
+    var unit: CGFloat = 1
+    /// The buttons that lock: a tap holds one down, the next tap lets it go (PadProfile.locked).
+    var locking: Set<PadButton> = []
 
     static let empty = PadLayout(key: "empty", mode: .pair, bodies: [], controls: [], statusCenter: .zero, statusWidth: 0, lightsCenter: .zero)
 
-    /// `scale` is the player's Size setting (1 = as designed for a 414-point-tall phone). `switcher` adds the button that
-    /// goes to the next open game, beside the menu's.
-    static func make(mode: PadMode, size: CGSize, insets: EdgeInsets, scale: CGFloat = 1, switcher: Bool = false) -> PadLayout {
+    /// The layout as designed. `scale` is the player's Size setting (1 = as designed for a 414-point-tall phone).
+    static func make(mode: PadMode, size: CGSize, insets: EdgeInsets, scale: CGFloat = 1) -> PadLayout {
         guard size.width > 200, size.height > 150 else { return .empty }
-        let layout: PadLayout
         switch mode {
-        case .pair: layout = pair(size: size, insets: insets, scale: scale)
-        case .left: layout = single(.left, size: size, insets: insets, scale: scale)
-        case .right: layout = single(.right, size: size, insets: insets, scale: scale)
+        case .pair: return pair(size: size, insets: insets, scale: scale)
+        case .left: return single(.left, size: size, insets: insets, scale: scale)
+        case .right: return single(.right, size: size, insets: insets, scale: scale)
         }
-        guard switcher, let menu = layout.control(for: .menu), case .action(_, let radius) = menu.kind else { return layout }
-        let swap = Control.makeAction(.switchGame, radius: radius, side: menu.side, at: CGPoint(x: menu.center.x + 2.8 * radius, y: menu.center.y))
-        return PadLayout(key: layout.key + " switcher", mode: layout.mode, bodies: layout.bodies, controls: layout.controls + [swap],
-                         statusCenter: layout.statusCenter, statusWidth: layout.statusWidth, lightsCenter: layout.lightsCenter)
+    }
+
+    /// The layout with what the player changed (LayoutStore): controls moved, resized and hidden, keys added, buttons that
+    /// lock. `editing` keeps the hidden controls, marked, for the layout editor. `switcher` adds the button that goes to the
+    /// next open game, beside the menu's wherever that is now.
+    func customized(_ profile: PadProfile, size: CGSize, editing: Bool = false, switcher: Bool = false) -> PadLayout {
+        guard !controls.isEmpty else { return self }
+        var all = controls
+        for extra in profile.extras {
+            all.append(.makeExtra(extra, radius: 26 * unit, label: label(for: extra.button),
+                                  at: CGPoint(x: size.width / 2, y: size.height / 2)))
+        }
+        var out: [Control] = []
+        for var c in all {
+            if let t = profile.controls[c.id] {
+                if t.hidden, c.canHide {
+                    guard editing else { continue }
+                    c.hidden = true
+                }
+                let k = min(max(t.scale, ControlTweak.scaleRange.lowerBound), ControlTweak.scaleRange.upperBound)
+                if k != 1 { c = c.scaled(by: CGFloat(k)) }
+                if let x = t.x, let y = t.y {
+                    c.center = Self.onScreen(CGPoint(x: x * size.width, y: y * size.height), size)
+                }
+            }
+            out.append(c)
+        }
+        if switcher, let menu = out.first(where: { $0.id == "action.menu" }), case .action(_, let radius) = menu.kind {
+            // On the side of the menu button that has room for it
+            let dx = menu.center.x + 3.8 * radius < size.width ? 2.8 * radius : -2.8 * radius
+            out.append(.makeAction(.switchGame, radius: radius, side: menu.side, at: CGPoint(x: menu.center.x + dx, y: menu.center.y)))
+        }
+        var layout = self
+        layout.controls = out
+        layout.locking = profile.locked
+        if !profile.isEmpty { layout.key += " custom \(profile.hashValue)" }
+        if editing { layout.key += " editing" }
+        if switcher { layout.key += " switcher" }
+        return layout
+    }
+
+    /// A centre kept far enough inside the screen for a finger to reach its control.
+    static func onScreen(_ p: CGPoint, _ size: CGSize) -> CGPoint {
+        let margin: CGFloat = 14
+        return CGPoint(x: min(max(p.x, margin), max(size.width - margin, margin)),
+                       y: min(max(p.y, margin), max(size.height - margin, margin)))
+    }
+
+    /// How the layout draws a button: as its key or its place in a diamond shows it (a sideways Joy-Con's are turned).
+    func label(for button: PadButton) -> KeyLabel {
+        for c in controls {
+            switch c.kind {
+            case .key(let b, _, let label) where b == button:
+                return label
+            case .cluster(let cluster):
+                if let i = cluster.keys.firstIndex(of: button) { return cluster.labels[i] }
+            default:
+                break
+            }
+        }
+        switch button {
+        case .ls: return .text("LS")
+        case .rs: return .text("RS")
+        default: return .text(button.rawValue.uppercased())
+        }
+    }
+
+    /// Every button the layout has a control for, in the order drawn, a stick's click after its stick.
+    var buttons: [PadButton] {
+        var out: [PadButton] = []
+        for c in controls {
+            switch c.kind {
+            case .key(let b, _, _): out.append(b)
+            case .cluster(let cluster): out.append(contentsOf: cluster.keys)
+            case .stick(let side, _, _): out.append(side == .left ? .ls : .rs)
+            case .action: break
+            }
+        }
+        return out
     }
 
     /// The control a new touch lands on, of any kind: the nearest one in units of size, within its slop.
@@ -290,7 +436,7 @@ struct PadLayout {
         let gapW = w - 2 * (edge + shellW)
         return PadLayout(key: layoutKey(.pair, size, insets, scale), mode: .pair, bodies: bodies, controls: controls,
                          statusCenter: CGPoint(x: w / 2, y: h * 0.46), statusWidth: min(gapW - 24, 220),
-                         lightsCenter: CGPoint(x: w / 2, y: band.top + 12))
+                         lightsCenter: CGPoint(x: w / 2, y: band.top + 12), unit: u)
     }
 
     /// One Joy-Con held sideways, rail away from the player and stick on the left, as one shell across the screen. The stick
@@ -346,6 +492,6 @@ struct PadLayout {
         let mode: PadMode = side == .left ? .left : .right
         return PadLayout(key: layoutKey(mode, size, insets, scale), mode: mode, bodies: [body], controls: controls,
                          statusCenter: CGPoint(x: w / 2, y: h * 0.42), statusWidth: max(min(w - 2 * (ox + 300 * u), 220), 110),
-                         lightsCenter: CGPoint(x: w / 2, y: band.top + 12))
+                         lightsCenter: CGPoint(x: w / 2, y: band.top + 12), unit: u)
     }
 }

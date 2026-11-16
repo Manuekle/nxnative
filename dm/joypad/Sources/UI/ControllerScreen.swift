@@ -12,36 +12,71 @@ struct ControllerScreen: View {
     @AppStorage(SettingsKey.rumble) private var rumble = true
     @AppStorage(SettingsKey.rumbleStrength) private var rumbleStrength = 1.0
     @AppStorage(SettingsKey.controlScale) private var controlScale = 1.0
+    @Environment(\.scenePhase) private var scenePhase
     @State private var showMenu = false
+    /// The layout being edited (LayoutEditor), while it is: the game and the way of holding the phone it was opened for.
+    @State private var editing: EditTarget?
+    /// The layout as edited so far; every change goes to the store at once.
+    @State private var draft = PadProfile()
+    /// The edited layout is the game's own, not the one every game uses.
+    @State private var perGame = false
+
+    private struct EditTarget: Equatable {
+        let game: String?
+        let title: String?
+        let mode: PadMode
+    }
 
     var body: some View {
         let theme = PadTheme.named(themeID)
         GeometryReader { geo in
-            let layout = PadLayout.make(mode: model.mode, size: geo.size, insets: Self.safeInsets(geo.safeAreaInsets), scale: CGFloat(controlScale),
-                                        switcher: model.sessions.count > 1)
+            let base = PadLayout.make(mode: model.mode, size: geo.size, insets: Self.safeInsets(geo.safeAreaInsets), scale: CGFloat(controlScale))
+            let profile = editing != nil ? draft : model.layouts.profile(game: model.layoutGame, mode: model.mode)
+            let layout = base.customized(profile, size: geo.size, editing: editing != nil,
+                                         switcher: editing == nil && model.sessions.count > 1)
             ZStack(alignment: .topLeading) {
                 if theme.light { WiiStripes() } else { theme.backdrop }
                 PadBodiesView(layout: layout, theme: theme)
-                PadControlsLayer(layout: layout, theme: theme)
-                PlayerLightsView(lights: model.lights, color: theme.led, light: theme.light)
-                    .position(layout.lightsCenter)
-                StatusView(width: layout.statusWidth, theme: theme)
-                    .position(layout.statusCenter)
-                TouchSurface(layout: layout,
-                             options: TouchOptions(deadzone: CGFloat(deadzone), floating: floatingSticks, pressHaptics: pressHaptics),
-                             onFrame: { model.update($0) },
-                             onAction: { action in
-                                 if action == .switchGame { model.switchToNextGame() } else { showMenu = true }
-                             },
-                             onOrientation: { model.setOrientation($0) })
+                if let target = editing {
+                    PadControlsView(layout: layout, theme: theme, frame: InputFrame())
+                    LayoutEditor(layout: layout, base: base, profile: $draft, size: geo.size, theme: theme,
+                                 gameTitle: target.title, perGame: $perGame,
+                                 onReset: { draft = perGame ? model.layouts.profile(game: nil, mode: target.mode) : PadProfile() },
+                                 onDone: { editing = nil })
+                } else {
+                    PadControlsLayer(layout: layout, theme: theme)
+                    PlayerLightsView(lights: model.lights, color: theme.led, light: theme.light)
+                        .position(layout.lightsCenter)
+                    StatusView(width: layout.statusWidth, theme: theme)
+                        .position(layout.statusCenter)
+                    TouchSurface(layout: layout,
+                                 options: TouchOptions(deadzone: CGFloat(deadzone), floating: floatingSticks, pressHaptics: pressHaptics),
+                                 paused: showMenu || scenePhase != .active,
+                                 onFrame: { model.update($0) },
+                                 onAction: { action in
+                                     if action == .switchGame { model.switchToNextGame() } else { showMenu = true }
+                                 },
+                                 onOrientation: { model.setOrientation($0) })
+                }
             }
             .frame(width: geo.size.width, height: geo.size.height)
         }
         .ignoresSafeArea()
         .defersSystemGestures(on: .all)
         .sheet(isPresented: $showMenu) {
-            MenuSheet()
+            MenuSheet(onCustomize: startEditing)
         }
+        .onChange(of: draft) { _, new in
+            guard let target = editing else { return }
+            model.layouts.set(new, game: perGame ? target.game : nil, mode: target.mode)
+        }
+        .onChange(of: perGame) { _, own in
+            guard let target = editing else { return }
+            draft = model.layouts.profile(game: own ? target.game : nil, mode: target.mode)
+        }
+        // Another game or another way of holding the phone: the layout on the screen is no longer the one being edited
+        .onChange(of: model.activeID) { _, _ in editing = nil }
+        .onChange(of: model.mode) { _, _ in editing = nil }
         .onChange(of: motion, initial: true) { _, on in
             model.setMotion(enabled: on)
         }
@@ -55,6 +90,16 @@ struct ControllerScreen: View {
 }
 
 extension ControllerScreen {
+    /// Opens the layout editor on the layout the controller shows: the game's own when a game is played (it starts as the
+    /// one every game uses), the one every game uses in the offline test.
+    private func startEditing() {
+        let game = model.layoutGame
+        perGame = game != nil
+        draft = model.layouts.profile(game: game, mode: model.mode)
+        model.update(InputFrame())
+        editing = EditTarget(game: game, title: game == nil ? nil : model.gameTitle, mode: model.mode)
+    }
+
     /// The screen's safe-area insets: the notch or the Dynamic Island, the home indicator. A view that ignores the safe area
     /// is told they are zero, so the window's own are taken as well.
     static func safeInsets(_ fromProxy: EdgeInsets) -> EdgeInsets {
