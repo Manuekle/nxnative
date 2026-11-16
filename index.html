@@ -3,247 +3,152 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f3f4f5">
-  <meta name="description" content="Download NX Packer for Mac, learn how to build games with nxnative, and set up NX Pad as an iPhone controller.">
-  <title>nxnative — NX Packer and NX Pad</title>
+  <meta name="theme-color" content="#f4f5f6">
+  <meta name="description" content="Download NX Packer for Mac and set up NX Pad, the iPhone controller for nxnative.">
+  <title>nxnative — NX Packer &amp; NX Pad</title>
   <link rel="icon" href="assets/app-icon.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <a class="skip pill" href="#main">Skip to content</a>
-  <header class="top-bar">
-    <div class="wrap top-inner">
-      <a class="brand" href="#main">
-        <img src="assets/app-icon.png" width="40" height="40" alt="">
-        <span>nxnative</span>
-      </a>
+  <a class="skip button" href="#main">Skip to content</a>
+  <header class="site-header">
+    <div class="wrap toolbar">
+      <a class="brand" href="#main"><img src="assets/app-icon.png" width="40" height="40" alt="">nxnative</a>
       <nav aria-label="Main navigation">
-        <a href="#downloads">Downloads</a>
-        <a href="#packer">Mac guide</a>
-        <a href="#pad">iPhone guide</a>
-        <a class="pill small github" href="https://github.com/Manuekle/nxnative">GitHub <span aria-hidden="true">↗</span></a>
+        <a class="button compact" href="#downloads">Downloads</a>
+        <a href="#packer">NX Packer</a>
+        <a href="#pad">NX Pad</a>
       </nav>
     </div>
   </header>
 
   <main id="main" class="wrap" tabindex="-1">
-    <section class="hero panel" aria-labelledby="hero-title">
-      <div class="hero-copy">
-        <h1 id="hero-title">Build on Mac.<br><span>Play with your iPhone.</span></h1>
-        <p>Use NX Packer to build an nxnative game. Pair NX Pad to use your iPhone as Joy-Cons over Wi-Fi.</p>
-        <div class="actions">
-          <a class="pill primary" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg">
-            <span aria-hidden="true">↓</span> Download for Mac
-          </a>
-          <a class="pill" href="#pad">Set up NX Pad <span aria-hidden="true">↘</span></a>
+    <section class="showcase window" aria-labelledby="hero-title">
+      <div class="showcase-top">
+        <div class="intro">
+          <h1 id="hero-title"><img src="assets/hero-title.png" width="1389" height="247" alt="Play on Mac. Control it with iPhone."></h1>
+          <p>Build a game with NX Packer. Use NX Pad as your Joy-Cons over Wi-Fi.</p>
         </div>
-        <p class="requirements">NX Packer 0.1.0 · Apple silicon · macOS 26.6+</p>
+        <a class="button primary" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg"><span aria-hidden="true">↓</span> Download for Mac</a>
       </div>
 
-      <div class="products" aria-hidden="true">
-        <div class="packer-window">
-          <div class="window-bar">
-            <span class="window-dots"><i></i><i></i><i></i></span>
-            <span>NX Packer</span>
-          </div>
-          <div class="window-title"><img src="assets/app-icon.png" width="36" height="36" alt=""> NX Packer</div>
-          <div class="window-body">
-            <div class="mini-panel">
-              <strong>Game files</strong>
-              <div class="mini-row"><span class="badge"><i class="folder-symbol"></i></span><span>Game<small>Game folder</small></span><span class="pill mini">Choose…</span></div>
-              <div class="mini-row"><span class="badge"><i class="key-symbol"></i></span><span>prod.keys<small>Local keys file</small></span><span class="pill mini">Choose…</span></div>
-            </div>
-            <div class="mini-panel form-targets">
-              <strong>Build for</strong>
-              <div class="mini-targets">
-                <div><i class="device-icon pocket"></i>iPhone &amp; iPad <small>.ipa</small></div>
-                <div class="selected"><i class="device-icon desktop"></i>Mac <small>.app</small></div>
-              </div>
-              <span class="pill primary mini">Build Game</span>
-            </div>
-          </div>
+      <figure class="session">
+        <div class="session-media">
+          <a class="game-monitor" href="assets/kirby-gameplay.webp">
+            <img src="assets/kirby-gameplay.webp" width="1600" height="900" alt="Kirby in Kirby and the Forgotten Land running in nxnative on Mac" fetchpriority="high">
+          </a>
+          <a class="controller" href="assets/pad-controller.webp">
+            <img src="assets/pad-controller.webp" width="1310" height="603" alt="NX Pad shows Kirby and the Forgotten Land connected as Player 1 with a pair of Joy-Cons">
+          </a>
         </div>
-        <div class="phone">
-          <div class="phone-screen">
-            <div class="controller left-controller">
-              <div class="shoulder"><span>ZL</span><span>L</span></div>
-              <div class="stick"></div>
-              <div class="buttons-arrows"><b>▴</b><b>◂</b><b>▸</b><b>▾</b></div>
-            </div>
-            <div class="controller-center"><span class="player-lights"><i></i><i></i><i></i><i></i></span><span>NX Pad</span></div>
-            <div class="controller right-controller">
-              <div class="shoulder"><span>R</span><span>ZR</span></div>
-              <div class="buttons-abxy"><b>X</b><b>Y</b><b>A</b><b>B</b></div>
-              <div class="stick"></div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <figcaption><em>Kirby and the Forgotten Land</em> on Mac, with NX Pad connected as Player&nbsp;1 in the iPhone simulator.</figcaption>
+      </figure>
     </section>
 
     <section id="downloads" class="section" aria-labelledby="downloads-title">
       <h2 id="downloads-title">Downloads</h2>
-      <div class="download-grid">
-        <article class="channel packer-channel">
-          <img class="channel-icon" src="assets/app-icon.png" width="64" height="64" alt="">
-          <div class="channel-body">
-            <h3>NX Packer</h3>
-            <p>Build a Mac app or an unsigned IPA.</p>
-            <p class="meta">Mac · v0.1.0 · Apple silicon</p>
-            <div class="actions">
-              <a class="pill primary small" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg"><span aria-hidden="true">↓</span> Download DMG</a>
-              <a class="pill small" href="https://github.com/Manuekle/nxnative/archive/refs/tags/nx-packer-v0.1.0.zip">Source ZIP</a>
-            </div>
-            <div class="inline-links">
-              <a href="https://github.com/Manuekle/nxnative/releases/tag/nx-packer-v0.1.0">Release notes</a>
-              <a href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/SHA256SUMS.txt">SHA‑256 checksum</a>
-            </div>
-          </div>
-        </article>
-
+      <div class="downloads">
         <article class="channel">
-          <img class="channel-icon" src="assets/app-icon.png" width="64" height="64" alt="">
-          <div class="channel-body">
-            <h3>NX Pad</h3>
-            <p>Use your iPhone as a wireless controller.</p>
-            <p class="meta">iPhone · iOS 26+ · Build with Xcode</p>
-            <div class="actions">
-              <a class="pill small" href="https://github.com/Manuekle/nxnative/archive/refs/heads/nxpad-pairing.zip"><span aria-hidden="true">↓</span> Download source</a>
-              <a class="pill small" href="#pad">Setup guide</a>
-            </div>
+          <img src="assets/app-icon.png" width="44" height="44" alt="">
+          <div>
+            <h3>NX Packer <span class="version">0.1.0</span></h3>
+            <p>Apple silicon · macOS 26.6 or later</p>
+          </div>
+          <div class="buttons">
+            <a class="button compact primary" href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/NX-Packer-0.1.0-macOS-arm64.dmg">Download DMG</a>
+            <a class="button compact" href="https://github.com/Manuekle/nxnative/archive/refs/tags/nx-packer-v0.1.0.zip">Source ZIP</a>
           </div>
         </article>
+        <article class="channel">
+          <img src="assets/app-icon.png" width="44" height="44" alt="">
+          <div>
+            <h3>NX Pad</h3>
+            <p>iOS 26 or later · Build with Xcode</p>
+          </div>
+          <div class="buttons">
+            <a class="button compact" href="https://github.com/Manuekle/nxnative/archive/refs/heads/nxpad-pairing.zip">Download source</a>
+          </div>
+        </article>
+      </div>
+      <div class="release-links">
+        <a href="https://github.com/Manuekle/nxnative/releases/tag/nx-packer-v0.1.0">Release notes</a>
+        <a href="https://github.com/Manuekle/nxnative/releases/download/nx-packer-v0.1.0/SHA256SUMS.txt">DMG checksum</a>
       </div>
     </section>
 
-    <section id="packer" class="section guide panel" aria-labelledby="packer-title">
-      <div class="guide-header">
-        <img src="assets/app-icon.png" width="48" height="48" alt="">
-        <div><h2 id="packer-title">NX Packer for Mac</h2><p>Install the app, then build from your game files.</p></div>
-      </div>
-      <div class="guide-grid">
-        <div>
-          <h3>Install</h3>
-          <ol class="steps">
-            <li>
-              <h4>Open the DMG</h4>
-              <p>Drag <strong>NX Packer.app</strong> into <strong>Applications</strong>. The build is ad hoc signed and unnotarized. If macOS shows a first-launch prompt, see <a href="https://support.apple.com/en-us/102445">Apple’s guidance</a>.</p>
-            </li>
-            <li>
-              <h4>Unzip the source and install the tools</h4>
-              <p>Use the source ZIP from the same release. The packer needs <a href="https://developer.apple.com/download/all/?q=Xcode%2027.2">Xcode 27.2</a>, its Metal toolchain, <a href="https://brew.sh/">Homebrew</a> and arm64 Python 3.12 or newer.</p>
-              <details class="disclosure">
-                <summary>Show the one-time setup commands</summary>
-                <p>If Xcode is in a different folder, use that path in the first command. Create the venv in your tools folder.</p>
-                <pre tabindex="0" aria-label="Mac setup commands"><code>sudo xcode-select -s /Applications/Xcode.app
+    <div class="guides section">
+      <section id="packer" class="window guide" aria-labelledby="packer-title">
+        <header class="guide-header">
+          <h2 id="packer-title"><img src="assets/packer-title.png" width="489" height="102" alt="NX Packer"></h2>
+          <p>Build a game on your Mac</p>
+        </header>
+        <figure class="walkthrough">
+          <a href="assets/packer-screen.webp"><img src="assets/packer-screen.webp" width="1520" height="1024" loading="lazy" alt="NX Packer window with Game and prod.keys file pickers, output choices, and the Build Game button"></a>
+        </figure>
+        <ol class="steps">
+          <li><strong>Install.</strong> Open the DMG and drag NX Packer to Applications. Unzip the matching Source ZIP.</li>
+          <li><strong>Choose your files.</strong> In <b>Build Tools</b>, select the unzipped source and your Python. Add your game folder and <code>prod.keys</code> if it is encrypted.</li>
+          <li><strong>Build.</strong> Choose <b>Mac</b> or <b>iPhone &amp; iPad</b>, then click <b>Build Game</b>. Use <b>Show in Finder</b> to find the finished app.</li>
+        </ol>
+        <details class="detail">
+          <summary>First-time Mac setup</summary>
+          <p>Install <a href="https://developer.apple.com/download/all/?q=Xcode%2027.2">Xcode 27.2</a>, <a href="https://brew.sh/">Homebrew</a>, and arm64 Python 3.12 or later. Run these commands in your tools folder, then choose <code>venv/bin/python3</code> in Build Tools.</p>
+          <pre tabindex="0"><code>sudo xcode-select -s /Applications/Xcode.app
 xcodebuild -downloadComponent MetalToolchain
 brew install xcodegen zstd glslang
 python3 -m venv venv
 venv/bin/python3 -m pip install lz4 "capstone&gt;=5,&lt;6" fonttools nsz zbic "backports.zstd; python_version &lt; '3.14'"</code></pre>
-                <p>To build an IPA, install the iOS platform from <strong>Xcode → Settings → Components</strong>.</p>
-              </details>
-            </li>
-            <li>
-              <h4>Set up Build Tools</h4>
-              <p>Open NX Packer and select <strong>Build Tools</strong>. Choose the unzipped nxnative folder and the Python executable with the build dependencies, such as your venv’s <code>bin/python3</code>.</p>
-            </li>
-          </ol>
-        </div>
-        <div>
-          <h3>Build a game</h3>
-          <ol class="steps">
-            <li>
-              <h4>Choose the game and keys</h4>
-              <p>Drop a folder containing one game and its updates and DLC, or a package in that folder. For encrypted <code>.nsp</code>, <code>.xci</code>, <code>.nsz</code> and <code>.xcz</code> packages, select your local <code>prod.keys</code>. A <code>.nup</code> or extracted dump needs no keys.</p>
-            </li>
-            <li>
-              <h4>Choose the output</h4>
-              <p>Select <strong>Mac (.app)</strong> or <strong>iPhone &amp; iPad (.ipa)</strong>. Use Mac for Switch 2 titles. <strong>Save to</strong> lets you choose where the build goes. The game folder is the default.</p>
-            </li>
-            <li>
-              <h4>Build and open the result</h4>
-              <p>Click <strong>Build Game</strong>. You can follow each stage in the window or open <strong>Build Log</strong>. Click <strong>Show in Finder</strong> when it finishes. Open a Mac app in Finder or <a href="https://github.com/Manuekle/nxnative/blob/nx-packer-v0.1.0/README.md#install">sideload the unsigned IPA</a> on your device.</p>
-            </li>
-          </ol>
-          <p class="guide-note">A first build can take 30–60 minutes. Later builds reuse extracted files.</p>
-        </div>
-      </div>
-    </section>
+          <p>For IPA builds, install the iOS platform in Xcode Settings. Switch 2 <code>.nup</code> files need no keys. Choose Mac for Switch 2 titles.</p>
+          <p>NX Packer is signed ad hoc. See <a href="https://support.apple.com/en-us/102445">Apple’s guidance</a> if macOS shows a first-launch prompt.</p>
+        </details>
+        <a class="manual" href="https://github.com/Manuekle/nxnative/blob/nx-packer-v0.1.0/dm/mac/packer/README.md">Full Mac guide <span aria-hidden="true">↗</span></a>
+      </section>
 
-    <section id="pad" class="section guide panel" aria-labelledby="pad-title">
-      <div class="guide-header">
-        <img src="assets/app-icon.png" width="48" height="48" alt="">
-        <div><h2 id="pad-title">NX Pad for iPhone</h2><p>Install with Xcode and pair once with your Mac.</p></div>
-      </div>
-      <div class="guide-grid">
-        <div>
-          <h3>Install</h3>
-          <ol class="steps">
-            <li>
-              <h4>Generate the Xcode project</h4>
-              <p>Unzip the NX Pad source. On a Mac with Xcode 27.2 or later, run the following from the unzipped source folder.</p>
-              <pre tabindex="0" aria-label="NX Pad project setup commands"><code>brew install xcodegen
+      <section id="pad" class="window guide" aria-labelledby="pad-title">
+        <header class="guide-header">
+          <h2 id="pad-title"><img src="assets/pad-title.png" width="351" height="102" alt="NX Pad"></h2>
+          <p>Use your iPhone as a controller</p>
+        </header>
+        <figure class="walkthrough pad-screen">
+          <a href="assets/pad-setup.webp"><img src="assets/pad-setup.webp" width="1572" height="723" loading="lazy" alt="NX Pad game browser showing Pair a Mac and the Pair, Left Joy-Con and Right Joy-Con modes"></a>
+        </figure>
+        <ol class="steps">
+          <li><strong>Install.</strong> Unzip the source. Generate the project with XcodeGen, sign it with your team, and run it on your iPhone in Xcode.</li>
+          <li><strong>Pair.</strong> On the same Wi-Fi, open a game on your Mac and choose <b>Controllers → Pair iPhone (NX Pad)…</b>. Scan its QR code or enter the six digits in <b>Pair a Mac</b>.</li>
+          <li><strong>Play.</strong> Pick both Joy-Cons or one sideways Joy-Con. Open the gear menu for settings or to switch games.</li>
+        </ol>
+        <details class="detail">
+          <summary>First-time iPhone setup</summary>
+          <p>On your Mac, run these commands from the unzipped NX Pad source.</p>
+          <pre tabindex="0"><code>brew install xcodegen
 cd dm/joypad
 xcodegen generate</code></pre>
-            </li>
-            <li>
-              <h4>Set your signing team</h4>
-              <p>Sign in to Xcode with your Apple Account. Create <code>Support/Signing.local.xcconfig</code> with your team ID and your own bundle identifier.</p>
-              <details class="disclosure">
-                <summary>Show an example signing configuration</summary>
-                <pre tabindex="0" aria-label="Example signing configuration"><code>DEVELOPMENT_TEAM = ABCDE12345
+          <p>In <code>Support/Signing.local.xcconfig</code>, set your Xcode team ID and a unique bundle identifier.</p>
+          <pre tabindex="0"><code>DEVELOPMENT_TEAM = ABCDE12345
 PRODUCT_BUNDLE_IDENTIFIER = com.yourname.nxpad</code></pre>
-              </details>
-            </li>
-            <li>
-              <h4>Run on your iPhone</h4>
-              <p>Connect an iPhone running iOS 26 or later, enable <strong>Developer Mode</strong> if prompted, and open <code>NXPad.xcodeproj</code>. Select your iPhone in Xcode and run. Allow Local Network access when NX Pad asks.</p>
-            </li>
-          </ol>
-        </div>
-        <div>
-          <h3>Pair and play</h3>
-          <ol class="steps">
-            <li>
-              <h4>Open the pairing window on your Mac</h4>
-              <p>Put both devices on the same Wi-Fi network. Open a game built with NX Pad support and choose <strong>Controllers → Pair iPhone (NX Pad)…</strong> in its menu bar.</p>
-            </li>
-            <li>
-              <h4>Scan the QR code or type six digits</h4>
-              <p>Scan with the iPhone Camera app, or tap <strong>Pair a Mac</strong> in NX Pad and enter the code the Mac shows. Once paired, NX Pad can join games on that Mac as they open.</p>
-            </li>
-            <li>
-              <h4>Choose how to hold your iPhone</h4>
-              <p>Use <strong>Pair</strong> for both Joy-Cons or <strong>Left Joy-Con</strong> or <strong>Right Joy-Con</strong> for one sideways controller. Tap <strong>Try the layout offline</strong> to practice without a game.</p>
-            </li>
-          </ol>
-          <a class="text-link" href="https://github.com/Manuekle/nxnative/blob/nxpad-pairing/dm/joypad/README.md">Full NX Pad manual <span aria-hidden="true">↗</span></a>
-        </div>
-      </div>
-    </section>
+          <p>Connect your iPhone, enable Developer Mode if prompted, and run <code>NXPad.xcodeproj</code> on the device. Allow Local Network access when NX Pad asks.</p>
+        </details>
+        <a class="manual" href="https://github.com/Manuekle/nxnative/blob/nxpad-pairing/dm/joypad/README.md">Full iPhone guide <span aria-hidden="true">↗</span></a>
+      </section>
+    </div>
 
     <section id="help" class="section help" aria-labelledby="help-title">
       <h2 id="help-title">Troubleshooting</h2>
-      <details class="channel disclosure">
+      <details class="channel detail">
         <summary>Build Game is unavailable</summary>
-        <p>Select a game and its keys if needed. In <strong>Build Tools</strong>, check that you selected the unzipped nxnative source folder and a Python executable with the required packages.</p>
+        <p>Choose a game and its keys if needed. Open Build Tools to check the source folder and Python executable.</p>
       </details>
-      <details class="channel disclosure">
-        <summary>My game does not appear in NX Pad</summary>
-        <p>Check that both devices are on the same Wi-Fi network and that NX Pad has Local Network access. Open the game’s pairing window so it starts listening. If you are using an older Mac build, rebuild the game with NX Pad support.</p>
-      </details>
-      <details class="channel disclosure">
-        <summary>Where are the build logs?</summary>
-        <p>Open <strong>Build Log</strong> in the NX Packer window. Detailed logs for each stage are in the <code>logs</code> directory inside the game’s build folder.</p>
+      <details class="channel detail">
+        <summary>NX Pad cannot see my game</summary>
+        <p>Check Wi-Fi and Local Network access. Open the game’s pairing window. Older Mac builds need to be rebuilt with NX Pad support.</p>
       </details>
     </section>
   </main>
 
-  <footer class="footer">
-    <div class="wrap footer-inner">
-      <a class="brand" href="#main"><img src="assets/app-icon.png" width="30" height="30" alt="">nxnative</a>
-      <a href="https://github.com/Manuekle/nxnative">GitHub <span aria-hidden="true">↗</span></a>
-      <a href="#downloads">Downloads <span aria-hidden="true">↑</span></a>
+  <footer class="site-footer">
+    <div class="wrap toolbar">
+      <a class="brand" href="#main"><img src="assets/app-icon.png" width="28" height="28" alt="">nxnative</a>
+      <a href="https://github.com/Manuekle/nxnative">View on GitHub <span aria-hidden="true">↗</span></a>
     </div>
   </footer>
 </body>
