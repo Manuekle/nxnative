@@ -133,14 +133,21 @@ struct LayoutEditor: View {
             }
 
             Divider()
-            if let control = selected {
-                inspector(control)
-            } else {
-                Text("Drag a control to move it. Tap one to resize it, hide it, or make it lock: a tap then holds it down until the next tap.")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(Wii.muted)
-                    .fixedSize(horizontal: false, vertical: true)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 9) {
+                    if let control = selected {
+                        inspector(control)
+                    } else {
+                        Text("Drag a control to move it. Tap one to resize it, hide it, or change how it works: a button can lock (a tap holds it down until the next tap), a stick can press buttons, like pushing up to accelerate.")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Wii.muted)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(.horizontal, 3)
             }
+            .scrollBounceBehavior(.basedOnSize)
+            .frame(maxHeight: max(size.height - 190, 90))
             Divider()
 
             HStack {
@@ -223,6 +230,9 @@ struct LayoutEditor: View {
                 .foregroundStyle(Wii.blueText)
                 .frame(width: 42, alignment: .trailing)
         }
+        if case .stick = control.kind {
+            stickInspector(control)
+        }
         let keys = lockable(control)
         if keys.count == 1, let button = keys.first {
             Toggle(isOn: lockBinding(button)) {
@@ -252,6 +262,64 @@ struct LayoutEditor: View {
                 }
             }
         }
+    }
+
+    // MARK: Stick
+
+    private func ruleBinding(_ id: String) -> Binding<StickRule> {
+        Binding(get: { profile.rule(id) }, set: { profile.setRule($0, for: id) })
+    }
+
+    /// Everything a stick can be set to: which way it reads, what its directions press, whether its tilt stays.
+    @ViewBuilder
+    private func stickInspector(_ control: Control) -> some View {
+        let rule = ruleBinding(control.id)
+        Picker("Reads", selection: rule.axis) {
+            Text("Any way").tag(StickRule.Axis.both)
+            Text("Side to side").tag(StickRule.Axis.horizontal)
+            Text("Up and down").tag(StickRule.Axis.vertical)
+        }
+        .pickerStyle(.segmented)
+        .labelsHidden()
+        Toggle(isOn: rule.locksTilt) {
+            Label("Lock the tilt", systemImage: "lock.fill")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(Wii.text)
+        }
+        Text("Presses a button when tilted")
+            .font(.system(size: 12, weight: .semibold))
+            .foregroundStyle(Wii.muted)
+        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], alignment: .leading, spacing: 6) {
+            directionMenu("Up", systemImage: "arrow.up", selection: rule.up)
+            directionMenu("Down", systemImage: "arrow.down", selection: rule.down)
+            directionMenu("Left", systemImage: "arrow.left", selection: rule.left)
+            directionMenu("Right", systemImage: "arrow.right", selection: rule.right)
+        }
+    }
+
+    private func directionMenu(_ name: LocalizedStringKey, systemImage: String, selection: Binding<PadButton?>) -> some View {
+        Menu {
+            Button("Nothing") { selection.wrappedValue = nil }
+            // The buttons a game holds down to drive come first
+            let first: [PadButton] = [.a, .b, .x, .y, .zr, .zl, .r, .l]
+            let all = addable
+            ForEach(first.filter(all.contains) + all.filter { !first.contains($0) }, id: \.self) { button in
+                Button(base.label(for: button).title) { selection.wrappedValue = button }
+            }
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.system(size: 11, weight: .bold))
+                Text(selection.wrappedValue.map { base.label(for: $0).title } ?? "—")
+                    .font(.system(size: 13, weight: .semibold))
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 8)
+            .frame(height: 30)
+            .background(RoundedRectangle(cornerRadius: 9).fill(selection.wrappedValue == nil ? AnyShapeStyle(Wii.buttonFill) : AnyShapeStyle(Wii.blue.opacity(0.18))))
+        }
+        .accessibilityLabel(Text(name))
     }
 
     // MARK: Buttons

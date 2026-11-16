@@ -60,6 +60,8 @@ final class TouchSurfaceView: UIView {
         var travel: CGFloat
         /// The second touch of a double tap: the stick stays clicked while it lasts.
         let held: Bool
+        /// The touch that lets a locked tilt go: it clicks nothing.
+        var releasing = false
     }
 
     private enum Owner {
@@ -167,7 +169,9 @@ final class TouchSurfaceView: UIView {
             let onKnob = hypot(p.x - c.center.x, p.y - c.center.y) <= knob * 1.15
             let origin = options.floating || onKnob ? p : c.center
             let held = lastTap[side].map { t.timestamp - $0 < Self.doubleTapWindow } ?? false
-            owners[id] = .stick(StickGrab(side: side, origin: origin, ring: ring, began: t.timestamp, travel: 0, held: held))
+            let releasing = (layout.stickRules[side]?.locksTilt ?? false) && (sticks[side] ?? .zero) != .zero
+            owners[id] = .stick(StickGrab(side: side, origin: origin, ring: ring, began: t.timestamp, travel: 0, held: held,
+                                          releasing: releasing))
             stickOwner[side] = id
             sticks[side] = vector(p, origin: origin, ring: ring)
         case let .action(action, _):
@@ -206,10 +210,12 @@ final class TouchSurfaceView: UIView {
         guard let owner = owners.removeValue(forKey: id) else { return }
         switch owner {
         case .stick(let grab):
-            sticks[grab.side] = .zero
+            let tilted = grab.travel >= grab.ring * 0.25
+            // A stick that locks its tilt keeps it after a real push; a tap lets it go
+            if cancelled || !(layout.stickRules[grab.side]?.locksTilt ?? false) || !tilted { sticks[grab.side] = .zero }
             if stickOwner[grab.side] == id { stickOwner[grab.side] = nil }
             // A short tap that hardly moves clicks the stick; touching it again right after holds the click.
-            if !cancelled, !grab.held, t.timestamp - grab.began < Self.tapMaxDuration, grab.travel < grab.ring * 0.25 {
+            if !cancelled, !grab.held, !grab.releasing, t.timestamp - grab.began < Self.tapMaxDuration, grab.travel < grab.ring * 0.25 {
                 pulse(grab.side == .left ? .ls : .rs)
                 lastTap[grab.side] = t.timestamp
             }
@@ -268,9 +274,17 @@ final class TouchSurfaceView: UIView {
             if case .stick(let grab) = owner, grab.held { buttons.insert(grab.side == .left ? .ls : .rs) }
         }
         buttons.formUnion(pulses.keys)
+        var out: [Side: CGVector] = [:]
+        for side in [Side.left, .right] {
+            let raw = sticks[side] ?? .zero
+            guard let rule = layout.stickRules[side] else { out[side] = raw; continue }
+            let (stick, pressed) = rule.apply(raw)
+            out[side] = stick
+            buttons.formUnion(pressed)
+        }
         let frame = InputFrame(buttons: buttons,
-                               leftStick: sticks[.left] ?? .zero,
-                               rightStick: sticks[.right] ?? .zero)
+                               leftStick: out[.left] ?? .zero,
+                               rightStick: out[.right] ?? .zero)
         guard frame != last else { return }
         if options.pressHaptics, !buttons.subtracting(last.buttons).isEmpty {
             feedback.impactOccurred(intensity: 0.75)

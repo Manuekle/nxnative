@@ -22,6 +22,48 @@ struct ExtraKey: Codable, Hashable, Identifiable {
     var button: PadButton
 }
 
+/// What a stick does besides tilting: which way it reads, which buttons its directions press (a stick pushed up as an
+/// accelerator, for a game that wants a button held), and whether it keeps its tilt when the thumb lifts.
+struct StickRule: Codable, Hashable {
+    enum Axis: String, Codable, CaseIterable, Identifiable {
+        case both, horizontal, vertical
+        var id: String { rawValue }
+    }
+
+    var axis: Axis = .both
+    /// The button each direction holds down while the stick is tilted that way; the stick no longer reports that direction.
+    var up: PadButton?
+    var down: PadButton?
+    var left: PadButton?
+    var right: PadButton?
+    /// The tilt stays when the thumb lifts, until the stick is tapped.
+    var locksTilt = false
+
+    /// How far the stick goes before a direction presses its button.
+    static let threshold: CGFloat = 0.45
+
+    var isDefault: Bool { self == StickRule() }
+
+    var mapsButtons: Bool { up != nil || down != nil || left != nil || right != nil }
+
+    /// What the stick reports for a tilt, and the buttons its directions hold. y is up.
+    func apply(_ v: CGVector) -> (stick: CGVector, buttons: Set<PadButton>) {
+        var out = v
+        var pressed = Set<PadButton>()
+        let t = Self.threshold
+        if let b = up { if v.dy > t { pressed.insert(b) }; out.dy = min(out.dy, 0) }
+        if let b = down { if v.dy < -t { pressed.insert(b) }; out.dy = max(out.dy, 0) }
+        if let b = right { if v.dx > t { pressed.insert(b) }; out.dx = min(out.dx, 0) }
+        if let b = left { if v.dx < -t { pressed.insert(b) }; out.dx = max(out.dx, 0) }
+        switch axis {
+        case .both: break
+        case .horizontal: out.dy = 0
+        case .vertical: out.dx = 0
+        }
+        return (out, pressed)
+    }
+}
+
 /// A layout the player made, for one way of holding the phone: the controls moved, resized or hidden, the keys added, and
 /// the buttons that lock (a tap holds them down, the next tap lets them go), for a button a thumb cannot keep held while it
 /// does something else.
@@ -30,8 +72,26 @@ struct PadProfile: Codable, Hashable {
     var controls: [String: ControlTweak] = [:]
     var extras: [ExtraKey] = []
     var locked: Set<PadButton> = []
+    /// By stick control ID ("stick.left", "stick.right").
+    var sticks: [String: StickRule] = [:]
 
-    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty }
+    init() {}
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        controls = try c.decodeIfPresent([String: ControlTweak].self, forKey: .controls) ?? [:]
+        extras = try c.decodeIfPresent([ExtraKey].self, forKey: .extras) ?? []
+        locked = try c.decodeIfPresent(Set<PadButton>.self, forKey: .locked) ?? []
+        sticks = try c.decodeIfPresent([String: StickRule].self, forKey: .sticks) ?? [:]
+    }
+
+    var isEmpty: Bool { controls.isEmpty && extras.isEmpty && locked.isEmpty && sticks.isEmpty }
+
+    func rule(_ id: String) -> StickRule { sticks[id] ?? StickRule() }
+
+    mutating func setRule(_ rule: StickRule, for id: String) {
+        sticks[id] = rule.isDefault ? nil : rule
+    }
 
     func tweak(_ id: String) -> ControlTweak { controls[id] ?? ControlTweak() }
 

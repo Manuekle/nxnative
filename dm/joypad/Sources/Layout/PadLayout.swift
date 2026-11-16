@@ -210,6 +210,8 @@ struct PadLayout {
     var unit: CGFloat = 1
     /// The buttons that lock: a tap holds one down, the next tap lets it go (PadProfile.locked).
     var locking: Set<PadButton> = []
+    /// What each stick does besides tilting (PadProfile.sticks).
+    var stickRules: [Side: StickRule] = [:]
 
     static let empty = PadLayout(key: "empty", mode: .pair, bodies: [], controls: [], statusCenter: .zero, statusWidth: 0, lightsCenter: .zero)
 
@@ -256,6 +258,9 @@ struct PadLayout {
         var layout = self
         layout.controls = out
         layout.locking = profile.locked
+        for c in out {
+            if case .stick(let side, _, _) = c.kind, let rule = profile.sticks[c.id] { layout.stickRules[side] = rule }
+        }
         if !profile.isEmpty { layout.key += " custom \(profile.hashValue)" }
         if editing { layout.key += " editing" }
         if switcher { layout.key += " switcher" }
