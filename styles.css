@@ -139,16 +139,24 @@ h3 { font-size: 1.04rem; font-weight: 650; }
   height: 85.38%;
   border-radius: 1.15%;
   clip-path: polygon(0 0, 43.86% 0, 43.86% 3.04%, 56.15% 3.04%, 56.15% 0, 100% 0, 100% 100%, 0 100%);
-  object-fit: cover;
+  background: #111417;
+  object-fit: contain;
 }
 .game-monitor .device-shell { inset: 0; width: 100%; }
+.controller::before {
+  position: absolute;
+  inset: 5.36% 2.62%;
+  border-radius: 11% / 20%;
+  background: #0b0d0f;
+  content: "";
+}
 .controller .device-screen {
   top: 5.36%;
-  left: 2.62%;
-  width: 94.76%;
+  left: 9.6%;
+  width: 87.78%;
   height: 89.27%;
-  border-radius: 11% / 20%;
-  object-fit: cover;
+  border-radius: 7% / 14%;
+  object-fit: contain;
 }
 .controller .device-shell {
   top: 50%;
