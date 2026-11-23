@@ -39,6 +39,9 @@ final class HostBrowser {
 
     private(set) var hosts: [Host] = []
     private(set) var problem: String?
+    /// Whether `hosts` is what the network shows now: the empty list a stopped browser leaves (the app in the background,
+    /// a browse that failed) says nothing about which games closed.
+    var isBrowsing: Bool { browser != nil }
     /// Every change of the list, on the main actor.
     @ObservationIgnored var onChange: (([Host]) -> Void)?
     @ObservationIgnored private var browser: NWBrowser?

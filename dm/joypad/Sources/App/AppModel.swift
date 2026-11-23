@@ -454,13 +454,20 @@ final class AppModel {
     /// The games on the network changed: remember the paired Macs' games, let go of the games that closed, and join the
     /// paired ones that opened (showing the controller when the phone was waiting on the games screen).
     private func hostsChanged(_ hosts: [HostBrowser.Host]) {
+        // The browser stopped (background, or a browse starting over): no game closed, the games left stay left
+        guard browser.isBrowsing else { return }
         let ids = Set(hosts.map(\.id))
         leftGames.formIntersection(ids)
         for h in hosts {
             if let mac = h.macID, store.mac(mac) != nil { store.saw(gameID: h.gameKey, title: h.displayTitle, on: mac, macName: h.macName) }
         }
         for s in sessions where !s.id.hasPrefix("address:") {
-            if ids.contains(s.id) { missing[s.id] = nil } else if missing[s.id] == nil { missing[s.id] = Date() }
+            if ids.contains(s.id) {
+                // Gone and back: the game opened again, perhaps on another port, so its name is looked up again
+                if missing.removeValue(forKey: s.id) != nil { s.link.reconnect() }
+            } else if missing[s.id] == nil {
+                missing[s.id] = Date()
+            }
         }
         if !missing.isEmpty {
             Task { [weak self] in

@@ -3,7 +3,8 @@ import Network
 
 /// One pairing (README.md, "Pairing"): PAIR to each game that may be showing the code, until one answers PAIRED with a
 /// confirmation that proves it holds the same key. A typed code goes to every game of every Mac on the network (only the
-/// one whose Pair iPhone… window is open takes it); a scanned QR code goes to its Mac's address and to that Mac's games.
+/// one whose Pair iPhone… window is open takes it); a scanned QR code goes to its Mac's address and to that Mac's games. Every
+/// game of one Mac gets the same nonce and proof.
 final class PairAttempt: @unchecked Sendable {
     enum Secret: Sendable {
         case code(String)
@@ -74,10 +75,16 @@ final class PairAttempt: @unchecked Sendable {
             started = Date()
             guard !targets.isEmpty else { return finish(.noAnswer) }
             let client = PairStore.clientID
+            // One PAIR per Mac, the same on every way to it: the QR code's address and the Bonjour service are often the same
+            // game, which then takes the second as the first sent again (the same PAIRED) instead of a wrong code
+            var packets: [UInt64: (nonce: Data, packet: Data)] = [:]
             for target in targets {
-                let nonce = PairCrypto.random(16)
-                let proof = PairCrypto.proof(secret: secret.data, host: target.host, client: client, nonce: nonce)
-                let packet = Wire.pair(seq: UInt32.random(in: 1...UInt32.max), clientID: client, method: secret.method, nonce: nonce, proof: proof, name: name)
+                let (nonce, packet) = packets[target.host] ?? {
+                    let nonce = PairCrypto.random(16)
+                    let proof = PairCrypto.proof(secret: secret.data, host: target.host, client: client, nonce: nonce)
+                    return (nonce, Wire.pair(seq: UInt32.random(in: 1...UInt32.max), clientID: client, method: secret.method, nonce: nonce, proof: proof, name: name))
+                }()
+                packets[target.host] = (nonce, packet)
                 let params = NWParameters.udp
                 params.includePeerToPeer = false
                 let c = NWConnection(to: target.endpoint, using: params)
